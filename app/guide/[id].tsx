@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Share2, Bookmark } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { FEATURED_GUIDE, RECENT_GUIDES } from '../../data/mockData';
 import { CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
 
@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   citationText: {
     fontSize: 12,
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     borderWidth: 1.5,
     borderColor: Colors.primary,
+    ...Shadows.md,
   },
   quizCardTitle: {
     fontSize: 18,

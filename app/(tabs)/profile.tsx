@@ -9,8 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Clock, Bell, CheckCircle2, Trash2, ChevronRight } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Clock, Bell, CheckCircle2, Trash2, ChevronRight, Flame } from 'lucide-react-native';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { getStoredProfile, resetStoredProfile, UserProfile } from '../../services/offlineStorage';
 
 export default function ProfileScreen() {
@@ -75,7 +75,8 @@ export default function ProfileScreen() {
               <Text style={styles.userPhone}>WhatsApp Not Linked</Text>
             )}
             <View style={styles.streakRow}>
-              <Text style={styles.streakBadgeText}>🔥 {profile.streakCount} Day Streak Active</Text>
+              <Flame size={12} color={Colors.streakBadgeText} style={{ marginRight: 4 }} />
+              <Text style={styles.streakBadgeText}>{profile.streakCount} Day Streak Active</Text>
             </View>
           </View>
         </View>
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   avatarBig: {
     width: 56,
@@ -204,6 +206,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: Colors.streakBadgeBg,
     borderRadius: BorderRadius.pill,
@@ -228,6 +232,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
+    ...Shadows.sm,
   },
   settingItem: {
     flexDirection: 'row',

@@ -9,8 +9,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, XCircle, BookOpen } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Search, XCircle, BookOpen, Shield, Home, Briefcase, Scale } from 'lucide-react-native';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
 
 const CATEGORY_FILTERS = [
@@ -20,6 +20,21 @@ const CATEGORY_FILTERS = [
   { id: 'employment', label: 'Employment' },
   { id: 'civil', label: 'Civil Rights' },
 ];
+
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'police':
+      return <Shield size={18} color={Colors.primary} />;
+    case 'tenancy':
+      return <Home size={18} color={Colors.primary} />;
+    case 'employment':
+      return <Briefcase size={18} color={Colors.primary} />;
+    case 'civil':
+      return <Scale size={18} color={Colors.primary} />;
+    default:
+      return <BookOpen size={18} color={Colors.primary} />;
+  }
+};
 
 export default function LibraryScreen() {
   const router = useRouter();
@@ -106,8 +121,13 @@ export default function LibraryScreen() {
             onPress={() => router.push(`/guide/${item.id}` as any)}
           >
             <View style={styles.cardHeaderRow}>
-              <View style={styles.sectionBadge}>
-                <Text style={styles.sectionBadgeText}>{item.section}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.categoryIconCircle}>
+                  {getCategoryIcon(item.category)}
+                </View>
+                <View style={styles.sectionBadge}>
+                  <Text style={styles.sectionBadgeText}>{item.section}</Text>
+                </View>
               </View>
               <Text style={styles.chapterText}>{item.chapter}</Text>
             </View>
@@ -171,6 +191,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.border,
     marginBottom: Spacing.sm,
+    ...Shadows.sm,
   },
   searchInput: {
     flex: 1,
@@ -212,6 +233,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -219,11 +241,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: Spacing.xs,
   },
+  categoryIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   sectionBadge: {
     backgroundColor: Colors.accentLight,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   sectionBadgeText: {
     fontSize: 11,

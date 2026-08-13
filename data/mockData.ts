@@ -7,6 +7,8 @@ export interface GuideItem {
   progressPercent?: number;
   image?: string;
   citation: string;
+  readTime?: string;
+  iconName?: 'Home' | 'Briefcase' | 'ShoppingBag' | 'Shield' | 'Scale' | 'FileText';
   content: string[];
 }
 
@@ -15,7 +17,9 @@ export const FEATURED_GUIDE: GuideItem = {
   category: 'Housing & Property',
   title: 'Navigating Tenant Rights',
   subtitle: 'A comprehensive look at housing laws, quit notice requirements, and rent protection in your area.',
-  badge: 'NEW GUIDE',
+  badge: 'FEATURED GUIDE',
+  readTime: '5 min read',
+  iconName: 'Home',
   citation: 'Tenancy Law s.13-16 / Constitution 1999 s.37',
   content: [
     'Under Nigerian tenancy laws, a landlord cannot forcefully eject a tenant without serving valid legal notices.',
@@ -32,6 +36,8 @@ export const RECENT_GUIDES: GuideItem[] = [
     title: 'Understanding Severance',
     subtitle: 'Know your rights regarding wrongful termination and redundancy benefits.',
     progressPercent: 65,
+    readTime: '3 min read',
+    iconName: 'Briefcase',
     citation: 'Labour Act Cap L1 s.11',
     content: [
       'Employers must provide written notice or payment in lieu of notice prior to termination.',
@@ -44,6 +50,8 @@ export const RECENT_GUIDES: GuideItem[] = [
     title: 'Digital Subscriptions & Refunds',
     subtitle: 'Fair transaction laws and protection against unauthorized billing.',
     progressPercent: 40,
+    readTime: '2 min read',
+    iconName: 'ShoppingBag',
     citation: 'FCCPA 2018 s.120',
     content: [
       'The Federal Competition and Consumer Protection Act guarantees clear disclosure of auto-renewal terms and refund rights for defective digital services.',
@@ -55,6 +63,8 @@ export const RECENT_GUIDES: GuideItem[] = [
     title: 'Police Stops & Phone Searches',
     subtitle: 'What to do when stopped at a road checkpoint.',
     progressPercent: 85,
+    readTime: '4 min read',
+    iconName: 'Shield',
     citation: 'Constitution 1999 s.35, s.37 & ACJA 2015 s.9',
     content: [
       'Officers cannot search your mobile phone unless there is a warrant or reasonable suspicion of a felony.',

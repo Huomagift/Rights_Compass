@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,52 +7,18 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
-import { ShieldCheck, CheckCircle2, Star } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
-
-const MOCK_LAWYERS = [
-  {
-    id: 'l1',
-    name: 'Barrister Chidi Okonkwo',
-    nbaNumber: 'NBA/EN/2014/4892',
-    specialty: 'Police Stops & Criminal Defense',
-    rating: 4.9,
-    reviewsCount: 38,
-    proBono: true,
-    location: 'Lagos Island, Lagos',
-    verified: true,
-  },
-  {
-    id: 'l2',
-    name: 'Amina Yusuf & Co. Chambers',
-    nbaNumber: 'NBA/ABJ/2011/1209',
-    specialty: 'Tenancy & Landlord Disputes',
-    rating: 4.8,
-    reviewsCount: 52,
-    proBono: false,
-    location: 'Central Business District, Abuja',
-    verified: true,
-  },
-  {
-    id: 'l3',
-    name: 'Adebowale & Partners',
-    nbaNumber: 'NBA/IB/2016/9931',
-    specialty: 'Employment Law & Wrongful Dismissal',
-    rating: 4.7,
-    reviewsCount: 29,
-    proBono: true,
-    location: 'Bodija, Ibadan',
-    verified: true,
-  },
-];
+import { Lock, ShieldCheck, CheckCircle2, Bell, Scale, Sparkles } from 'lucide-react-native';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
 export default function MarketplaceScreen() {
+  const [notified, setNotified] = useState(false);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Find Legal Aid</Text>
         <Text style={styles.pageSubtitle}>
-          Connect with NBA-verified lawyers and pro bono legal aid organizations for case-specific representation.
+          Connect with NBA-verified pro bono lawyers and accredited legal representation.
         </Text>
       </View>
 
@@ -60,60 +26,58 @@ export default function MarketplaceScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.bannerBox}>
-          <ShieldCheck size={24} color={Colors.primary} />
-          <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-            <Text style={styles.bannerTitle}>NBA Verification Guaranteed</Text>
-            <Text style={styles.bannerSub}>
-              All listed legal practitioners are verified against the Nigerian Bar Association enrollment database.
-            </Text>
+        {/* COMING SOON LOCKED CARD */}
+        <View style={styles.comingSoonCard}>
+          <View style={styles.lockIconCircle}>
+            <Lock size={28} color={Colors.primary} />
           </View>
+
+          <View style={styles.phaseBadge}>
+            <Text style={styles.phaseBadgeText}>PHASE 2 • COMING SOON</Text>
+          </View>
+
+          <Text style={styles.cardTitle}>NBA Legal Aid Network</Text>
+          <Text style={styles.cardDescription}>
+            We are currently verifying and onboarding accredited Nigerian Bar Association (NBA) legal practitioners and pro bono organizations. Direct lawyer matching and intake requests will launch in our next release.
+          </Text>
+
+          {/* TEASER FEATURE LIST */}
+          <View style={styles.teaserBox}>
+            <View style={styles.teaserRow}>
+              <CheckCircle2 size={16} color={Colors.success} style={{ marginRight: 8 }} />
+              <Text style={styles.teaserText}>NBA Enrollment Database Verification</Text>
+            </View>
+
+            <View style={styles.teaserRow}>
+              <ShieldCheck size={16} color={Colors.primary} style={{ marginRight: 8 }} />
+              <Text style={styles.teaserText}>Pro Bono & Free Legal Representation</Text>
+            </View>
+
+            <View style={styles.teaserRow}>
+              <Scale size={16} color={Colors.primary} style={{ marginRight: 8 }} />
+              <Text style={styles.teaserText}>State & Specialty Case Intake Matching</Text>
+            </View>
+          </View>
+
+          {/* WAITLIST / NOTIFY BUTTON */}
+          <TouchableOpacity
+            style={[styles.notifyBtn, notified && styles.notifyBtnActive]}
+            activeOpacity={0.85}
+            onPress={() => setNotified(!notified)}
+          >
+            {notified ? (
+              <View style={styles.btnRow}>
+                <Sparkles size={18} color={Colors.white} style={{ marginRight: 6 }} />
+                <Text style={styles.notifyBtnText}>You&apos;re on the Waitlist!</Text>
+              </View>
+            ) : (
+              <View style={styles.btnRow}>
+                <Bell size={18} color={Colors.white} style={{ marginRight: 6 }} />
+                <Text style={styles.notifyBtnText}>Notify Me When Live</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
-
-        <Text style={styles.sectionTitle}>Featured Practitioners</Text>
-
-        {MOCK_LAWYERS.map((lawyer) => (
-          <View key={lawyer.id} style={styles.lawyerCard}>
-            <View style={styles.cardTopRow}>
-              <View style={{ flex: 1 }}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.lawyerName}>{lawyer.name}</Text>
-                  {lawyer.verified && (
-                    <CheckCircle2
-                      size={16}
-                      color={Colors.success}
-                      style={{ marginLeft: 4 }}
-                    />
-                  )}
-                </View>
-                <Text style={styles.nbaText}>
-                  {lawyer.nbaNumber} • {lawyer.location}
-                </Text>
-              </View>
-
-              <View style={styles.ratingBadge}>
-                <Star size={12} color={Colors.warning} fill={Colors.warning} />
-                <Text style={styles.ratingText}>{lawyer.rating}</Text>
-              </View>
-            </View>
-
-            <Text style={styles.specialtyTag}>⚖️ {lawyer.specialty}</Text>
-
-            <View style={styles.cardFooter}>
-              {lawyer.proBono ? (
-                <View style={styles.proBonoBadge}>
-                  <Text style={styles.proBonoText}>Pro Bono Available</Text>
-                </View>
-              ) : (
-                <Text style={styles.feeText}>Fee-based representation</Text>
-              )}
-
-              <TouchableOpacity style={styles.contactBtn}>
-                <Text style={styles.contactBtnText}>Request Intake</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -144,114 +108,97 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scrollContent: {
-    padding: Spacing.md,
+    padding: Spacing.lg,
+    flexGrow: 1,
+    justifyContent: 'center',
   },
-  bannerBox: {
-    flexDirection: 'row',
+  comingSoonCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
     alignItems: 'center',
-    backgroundColor: Colors.accentLight,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.md,
   },
-  bannerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.primary,
+  lockIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
   },
-  bannerSub: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: Colors.text,
-    marginTop: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
+  phaseBadge: {
+    backgroundColor: 'rgba(150, 62, 20, 0.12)',
+    borderRadius: BorderRadius.pill,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
     marginBottom: Spacing.sm,
   },
-  lawyerCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  phaseBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 0.8,
   },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xs,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  lawyerName: {
-    fontSize: 16,
+  cardTitle: {
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.text,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
   },
-  nbaText: {
-    fontSize: 12,
+  cardDescription: {
+    fontSize: 14,
+    lineHeight: 22,
     color: Colors.textMuted,
-    marginTop: 2,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
   },
-  ratingBadge: {
+  teaserBox: {
+    width: '100%',
+    backgroundColor: Colors.cardWhite,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
+  },
+  teaserRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardWhite,
-    borderRadius: BorderRadius.pill,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    height: 24,
+    marginVertical: 4,
   },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.text,
-    marginLeft: 2,
-  },
-  specialtyTag: {
+  teaserText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
-    marginBottom: Spacing.md,
+    color: Colors.text,
   },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.sm,
-  },
-  proBonoBadge: {
-    backgroundColor: 'rgba(45, 122, 70, 0.12)',
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  proBonoText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.success,
-  },
-  feeText: {
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-  contactBtn: {
+  notifyBtn: {
+    width: '100%',
     backgroundColor: Colors.accent,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.md,
   },
-  contactBtnText: {
-    fontSize: 13,
+  notifyBtnActive: {
+    backgroundColor: Colors.success,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notifyBtnText: {
+    fontSize: 15,
     fontWeight: '700',
     color: Colors.white,
   },

@@ -13,17 +13,27 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Colors, Spacing, BorderRadius } from '../constants/theme';
+import {
+  Clock,
+  Shield,
+  Home,
+  Briefcase,
+  ShoppingBag,
+  Scale,
+  Check,
+  ArrowRight,
+} from 'lucide-react-native';
+import { Colors, Spacing, BorderRadius, Shadows } from '../constants/theme';
 import { saveStoredProfile } from '../services/offlineStorage';
 
 const { width } = Dimensions.get('window');
 
 const DOMAIN_OPTIONS = [
-  { id: 'police', label: 'Police Stop & Arrest Rights', icon: '🛡️' },
-  { id: 'tenancy', label: 'Tenant & Housing Rights', icon: '🏡' },
-  { id: 'employment', label: 'Employment & Labor Law', icon: '💼' },
-  { id: 'consumer', label: 'Consumer Rights & Refunds', icon: '🛍️' },
-  { id: 'civil', label: 'Fundamental Civil Rights', icon: '⚖️' },
+  { id: 'police', label: 'Police Stop & Arrest Rights', Icon: Shield },
+  { id: 'tenancy', label: 'Tenant & Housing Rights', Icon: Home },
+  { id: 'employment', label: 'Employment & Labor Law', Icon: Briefcase },
+  { id: 'consumer', label: 'Consumer Rights & Refunds', Icon: ShoppingBag },
+  { id: 'civil', label: 'Fundamental Civil Rights', Icon: Scale },
 ];
 
 const TIME_OPTIONS = ['07:00 AM', '08:00 AM', '09:00 AM', '07:00 PM'];
@@ -192,15 +202,22 @@ export default function OnboardingScreen() {
                       ]}
                       onPress={() => setPreferredTime(timeOption)}
                     >
-                      <Text
-                        style={[
-                          styles.timeOptionText,
-                          isSelected && styles.timeOptionTextSelected,
-                        ]}
-                      >
-                        ⏰ {timeOption}
-                      </Text>
-                      {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Clock
+                          size={18}
+                          color={isSelected ? Colors.primary : Colors.textMuted}
+                          style={{ marginRight: 10 }}
+                        />
+                        <Text
+                          style={[
+                            styles.timeOptionText,
+                            isSelected && styles.timeOptionTextSelected,
+                          ]}
+                        >
+                          {timeOption}
+                        </Text>
+                      </View>
+                      {isSelected && <Check size={18} color={Colors.primary} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -235,6 +252,7 @@ export default function OnboardingScreen() {
               <View style={styles.optionsContainer}>
                 {DOMAIN_OPTIONS.map((domain) => {
                   const isSelected = selectedDomains.includes(domain.id);
+                  const IconComp = domain.Icon;
                   return (
                     <TouchableOpacity
                       key={domain.id}
@@ -245,7 +263,11 @@ export default function OnboardingScreen() {
                       onPress={() => toggleDomain(domain.id)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.domainIcon}>{domain.icon}</Text>
+                      <IconComp
+                        size={20}
+                        color={isSelected ? Colors.primary : Colors.textMuted}
+                        style={{ marginRight: 12 }}
+                      />
                       <Text
                         style={[
                           styles.domainLabel,
@@ -261,7 +283,7 @@ export default function OnboardingScreen() {
                         ]}
                       >
                         {isSelected && (
-                          <Text style={styles.checkboxCheck}>✓</Text>
+                          <Check size={14} color={Colors.white} />
                         )}
                       </View>
                     </TouchableOpacity>
@@ -281,7 +303,10 @@ export default function OnboardingScreen() {
                   style={[styles.primaryButton, { flex: 1, marginLeft: 12 }]}
                   onPress={handleFinish}
                 >
-                  <Text style={styles.primaryButtonText}>Enter App 🚀</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.primaryButtonText}>Enter App</Text>
+                    <ArrowRight size={18} color={Colors.white} style={{ marginLeft: 6 }} />
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -307,31 +332,41 @@ const styles = StyleSheet.create({
   },
   progressBarTrack: {
     flex: 1,
-    height: 8,
-    backgroundColor: Colors.border,
+    height: 10,
+    backgroundColor: '#EAE0D5',
     borderRadius: BorderRadius.pill,
     marginRight: Spacing.md,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(229, 214, 200, 0.8)',
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: Colors.primary,
+    backgroundImage: 'linear-gradient(90deg, #8A3C1B 0%, #D8602A 100%)' as any,
     borderRadius: BorderRadius.pill,
   },
   stepCounter: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 0.5,
   },
   scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   stepContainer: {
-    paddingTop: Spacing.md,
+    width: '100%',
+    paddingVertical: Spacing.md,
   },
   brandLogo: {
-    width: width * 0.55,
+    width: Math.min(width * 0.55, 220),
     height: 80,
     alignSelf: 'center',
     marginBottom: Spacing.md,
@@ -358,6 +393,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   mascotImage: {
     width: 110,
@@ -370,6 +406,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   mascotBubbleText: {
     fontSize: 14,
@@ -413,6 +450,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     fontSize: 16,
     color: Colors.text,
+    ...Shadows.sm,
   },
   optionsContainer: {
     marginBottom: Spacing.xl,
@@ -427,6 +465,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+    ...Shadows.sm,
   },
   timeOptionSelected: {
     borderColor: Colors.primary,
@@ -454,6 +493,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+    ...Shadows.sm,
   },
   domainCardSelected: {
     borderColor: Colors.primary,
@@ -501,11 +541,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 3,
+    ...Shadows.md,
   },
   primaryButtonText: {
     color: Colors.white,
