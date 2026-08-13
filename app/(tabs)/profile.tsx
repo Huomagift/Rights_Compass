@@ -9,8 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Clock, Bell, CheckCircle2, Trash2, ChevronRight, Flame } from 'lucide-react-native';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { getStoredProfile, resetStoredProfile, UserProfile } from '../../services/offlineStorage';
 
 export default function ProfileScreen() {
@@ -75,7 +75,8 @@ export default function ProfileScreen() {
               <Text style={styles.userPhone}>WhatsApp Not Linked</Text>
             )}
             <View style={styles.streakRow}>
-              <Text style={styles.streakBadgeText}>🔥 {profile.streakCount} Day Streak Active</Text>
+              <Flame size={12} color={Colors.streakBadgeText} style={{ marginRight: 4 }} />
+              <Text style={styles.streakBadgeText}>{profile.streakCount} Day Streak Active</Text>
             </View>
           </View>
         </View>
@@ -85,7 +86,7 @@ export default function ProfileScreen() {
         <View style={styles.settingsGroup}>
           <View style={styles.settingItem}>
             <View style={styles.settingIconCircle}>
-              <Ionicons name="time-outline" size={18} color={Colors.primary} />
+              <Clock size={18} color={Colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
               <Text style={styles.settingTitle}>Daily Notification Time</Text>
@@ -100,7 +101,7 @@ export default function ProfileScreen() {
 
           <View style={[styles.settingItem, { borderBottomWidth: 0 }]}>
             <View style={styles.settingIconCircle}>
-              <Ionicons name="notifications-outline" size={18} color={Colors.primary} />
+              <Bell size={18} color={Colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
               <Text style={styles.settingTitle}>Offline Mode Status</Text>
@@ -108,7 +109,7 @@ export default function ProfileScreen() {
                 1999 Constitution database cached on device
               </Text>
             </View>
-            <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+            <CheckCircle2 size={20} color={Colors.success} />
           </View>
         </View>
 
@@ -117,7 +118,7 @@ export default function ProfileScreen() {
         <View style={styles.settingsGroup}>
           <TouchableOpacity style={styles.settingItem} onPress={handleResetData}>
             <View style={[styles.settingIconCircle, { backgroundColor: '#FEE2E2' }]}>
-              <Ionicons name="trash-outline" size={18} color="#DC2626" />
+              <Trash2 size={18} color="#DC2626" />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
               <Text style={[styles.settingTitle, { color: '#DC2626' }]}>
@@ -127,7 +128,7 @@ export default function ProfileScreen() {
                 Wipes stored profile and streak history
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+            <ChevronRight size={16} color={Colors.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   avatarBig: {
     width: 56,
@@ -204,6 +206,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: Colors.streakBadgeBg,
     borderRadius: BorderRadius.pill,
@@ -228,6 +232,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
+    ...Shadows.sm,
   },
   settingItem: {
     flexDirection: 'row',

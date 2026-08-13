@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { X, AlertTriangle, BookOpen, Mic, Send } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '../constants/theme';
 import { processTutorQuery, TutorResponse } from '../services/tutorAgent';
 
@@ -102,7 +102,7 @@ export default function TutorChatScreen() {
             style={styles.closeBtn}
             onPress={() => router.back()}
           >
-            <Ionicons name="close" size={22} color={Colors.text} />
+            <X size={22} color={Colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -138,7 +138,7 @@ export default function TutorChatScreen() {
                 >
                   {msg.isUrgent && (
                     <View style={styles.urgentHeader}>
-                      <Ionicons name="warning" size={16} color="#DC2626" />
+                      <AlertTriangle size={16} color="#DC2626" />
                       <Text style={styles.urgentHeaderText}>
                         CRISIS / IN-PROGRESS ALERT
                       </Text>
@@ -165,7 +165,7 @@ export default function TutorChatScreen() {
 
                   {msg.citation && (
                     <View style={styles.citationBox}>
-                      <Ionicons name="book" size={12} color={Colors.primary} />
+                      <BookOpen size={12} color={Colors.primary} />
                       <Text style={styles.citationText}>{msg.citation}</Text>
                     </View>
                   )}
@@ -198,7 +198,7 @@ export default function TutorChatScreen() {
         {/* INPUT BAR */}
         <View style={styles.inputContainer}>
           <TouchableOpacity style={styles.voiceNoteBtn}>
-            <Ionicons name="mic-outline" size={22} color={Colors.primary} />
+            <Mic size={22} color={Colors.primary} />
           </TouchableOpacity>
 
           <TextInput
@@ -216,7 +216,7 @@ export default function TutorChatScreen() {
             onPress={() => handleSend()}
             activeOpacity={0.8}
           >
-            <Ionicons name="send" size={18} color={Colors.white} />
+            <Send size={18} color={Colors.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

@@ -8,8 +8,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { X, CheckCircle2, AlertCircle, Flame } from 'lucide-react-native';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { SAMPLE_QUIZZES } from '../../data/mockData';
 
 export default function QuizScreen() {
@@ -31,11 +31,12 @@ export default function QuizScreen() {
           style={styles.backBtn}
           onPress={() => router.back()}
         >
-          <Ionicons name="close" size={20} color={Colors.text} />
+          <X size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Daily Scenario Quiz</Text>
         <View style={styles.streakBadge}>
-          <Text style={styles.streakText}>🔥 Streak +1</Text>
+          <Flame size={12} color={Colors.streakBadgeText} style={{ marginRight: 4 }} />
+          <Text style={styles.streakText}>Streak +1</Text>
         </View>
       </View>
 
@@ -93,11 +94,11 @@ export default function QuizScreen() {
             ]}
           >
             <View style={styles.feedbackHeader}>
-              <Ionicons
-                name={chosenOptionObj?.isCorrect ? 'checkmark-circle' : 'alert-circle'}
-                size={22}
-                color={chosenOptionObj?.isCorrect ? Colors.success : Colors.warning}
-              />
+              {chosenOptionObj?.isCorrect ? (
+                <CheckCircle2 size={22} color={Colors.success} />
+              ) : (
+                <AlertCircle size={22} color={Colors.warning} />
+              )}
               <Text
                 style={[
                   styles.feedbackTitle,
@@ -189,6 +190,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.md,
   },
   scenarioLabel: {
     fontSize: 10,
@@ -218,6 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     borderWidth: 1.5,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   selectedOption: {
     borderColor: Colors.primary,
