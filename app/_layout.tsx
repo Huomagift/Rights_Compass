@@ -1,44 +1,8 @@
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useFonts } from 'expo-font';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors } from '../constants/theme';
 
-const ioniconsFont = require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf');
-
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    Ionicons: ioniconsFont,
-  });
-
-  useEffect(() => {
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const styleId = 'expo-vector-icons-ionicons';
-      if (!document.getElementById(styleId)) {
-        const fontUrl = typeof ioniconsFont === 'string' ? ioniconsFont : ioniconsFont.default || ioniconsFont;
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.type = 'text/css';
-        style.appendChild(
-          document.createTextNode(`
-            @font-face {
-              font-family: 'Ionicons';
-              src: url('${fontUrl}') format('truetype');
-              font-display: swap;
-            }
-          `)
-        );
-        document.head.appendChild(style);
-      }
-    }
-  }, []);
-
-  if (!loaded && !error) {
-    return null;
-  }
-
   return (
     <>
       <StatusBar style="dark" />
@@ -74,4 +38,5 @@ export default function RootLayout() {
     </>
   );
 }
+
 

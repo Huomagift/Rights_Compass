@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { X, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { SAMPLE_QUIZZES } from '../../data/mockData';
 
@@ -31,7 +31,7 @@ export default function QuizScreen() {
           style={styles.backBtn}
           onPress={() => router.back()}
         >
-          <Ionicons name="close" size={20} color={Colors.text} />
+          <X size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Daily Scenario Quiz</Text>
         <View style={styles.streakBadge}>
@@ -93,11 +93,11 @@ export default function QuizScreen() {
             ]}
           >
             <View style={styles.feedbackHeader}>
-              <Ionicons
-                name={chosenOptionObj?.isCorrect ? 'checkmark-circle' : 'alert-circle'}
-                size={22}
-                color={chosenOptionObj?.isCorrect ? Colors.success : Colors.warning}
-              />
+              {chosenOptionObj?.isCorrect ? (
+                <CheckCircle2 size={22} color={Colors.success} />
+              ) : (
+                <AlertCircle size={22} color={Colors.warning} />
+              )}
               <Text
                 style={[
                   styles.feedbackTitle,

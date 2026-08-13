@@ -10,7 +10,17 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  User,
+  ArrowRight,
+  ChevronRight,
+  FileText,
+  Search,
+  FileSearch,
+  Scale,
+  Clock,
+  Sparkles,
+} from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { getStoredProfile, UserProfile } from '../../services/offlineStorage';
 import { FEATURED_GUIDE, RECENT_GUIDES } from '../../data/mockData';
@@ -62,13 +72,13 @@ export default function HomeScreen() {
               style={styles.profileAvatar}
               onPress={() => router.push('/(tabs)/profile' as any)}
             >
-              <Ionicons name="person" size={20} color={Colors.white} />
+              <User size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
         </View>
 
         <Text style={styles.headerSubtitle}>
-          Your compass is set. Let's find the legal clarity you need today.
+          Your compass is set. Let&apos;s find the legal clarity you need today.
         </Text>
 
         {/* HERO FEATURED GUIDE CARD */}
@@ -88,7 +98,7 @@ export default function HomeScreen() {
             onPress={() => router.push(`/guide/${FEATURED_GUIDE.id}` as any)}
           >
             <Text style={styles.heroButtonText}>Start Reading</Text>
-            <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+            <ArrowRight size={18} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -98,7 +108,7 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => router.push('/(tabs)/library' as any)}>
             <View style={styles.viewLibraryLink}>
               <Text style={styles.viewLibraryText}>View Library</Text>
-              <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
+              <ChevronRight size={14} color={Colors.primary} />
             </View>
           </TouchableOpacity>
         </View>
@@ -116,7 +126,7 @@ export default function HomeScreen() {
               onPress={() => router.push(`/guide/${guide.id}` as any)}
             >
               <View style={styles.guideImagePlaceholder}>
-                <Ionicons name="document-text-outline" size={32} color={Colors.primary} />
+                <FileText size={32} color={Colors.primary} />
               </View>
 
               <View style={styles.guideCardBody}>
@@ -153,7 +163,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/(tabs)/library' as any)}
           >
             <View style={styles.quickIconCircle}>
-              <Ionicons name="search" size={20} color={Colors.primary} />
+              <Search size={20} color={Colors.primary} />
             </View>
             <Text style={styles.quickTitle}>Search Laws</Text>
             <Text style={styles.quickSub}>Instant lookup</Text>
@@ -164,7 +174,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/tutor-chat' as any)}
           >
             <View style={styles.quickIconCircle}>
-              <Ionicons name="document-attach" size={20} color={Colors.primary} />
+              <FileSearch size={20} color={Colors.primary} />
             </View>
             <Text style={styles.quickTitle}>Scan Doc</Text>
             <Text style={styles.quickSub}>Analyze clauses</Text>
@@ -175,7 +185,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/(tabs)/marketplace' as any)}
           >
             <View style={styles.quickIconCircle}>
-              <Ionicons name="scale" size={20} color={Colors.primary} />
+              <Scale size={20} color={Colors.primary} />
             </View>
             <Text style={styles.quickTitle}>Find Legal Aid</Text>
             <Text style={styles.quickSub}>Pro bono search</Text>
@@ -186,7 +196,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/tutor-chat' as any)}
           >
             <View style={styles.quickIconCircle}>
-              <Ionicons name="time-outline" size={20} color={Colors.primary} />
+              <Clock size={20} color={Colors.primary} />
             </View>
             <Text style={styles.quickTitle}>History</Text>
             <Text style={styles.quickSub}>Previous queries</Text>
@@ -198,7 +208,7 @@ export default function HomeScreen() {
       <View style={styles.floatingContainer}>
         <View style={styles.speechBubble}>
           <Text style={styles.speechBubbleText}>
-            "Have a legal question? I'm here to help you navigate!"
+            &quot;Have a legal question? I&apos;m here to help you navigate!&quot;
           </Text>
         </View>
 
@@ -213,7 +223,7 @@ export default function HomeScreen() {
             contentFit="cover"
           />
           <View style={styles.sparkleBadge}>
-            <Ionicons name="sparkles" size={14} color={Colors.white} />
+            <Sparkles size={14} color={Colors.white} />
           </View>
         </TouchableOpacity>
       </View>

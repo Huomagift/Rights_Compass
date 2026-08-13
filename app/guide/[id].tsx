@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Share2, Bookmark } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { FEATURED_GUIDE, RECENT_GUIDES } from '../../data/mockData';
 import { CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
@@ -39,13 +39,13 @@ export default function GuideDetailScreen() {
           style={styles.backBtn}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {title}
         </Text>
         <TouchableOpacity style={styles.shareBtn}>
-          <Ionicons name="share-social-outline" size={20} color={Colors.primary} />
+          <Share2 size={20} color={Colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -60,7 +60,7 @@ export default function GuideDetailScreen() {
         <Text style={styles.mainTitle}>{title}</Text>
 
         <View style={styles.citationBox}>
-          <Ionicons name="bookmark" size={14} color={Colors.primary} />
+          <Bookmark size={14} color={Colors.primary} />
           <Text style={styles.citationText}>Legal Source: {citation}</Text>
         </View>
 

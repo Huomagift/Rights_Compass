@@ -102,7 +102,7 @@ export default function OnboardingScreen() {
                 />
                 <View style={styles.mascotBubble}>
                   <Text style={styles.mascotBubbleText}>
-                    "Hi! I'm your AI Legal Mascot. I'm here to guide you through your rights every single day!"
+                    &quot;Hi! I&apos;m your AI Legal Mascot. I&apos;m here to guide you through your rights every single day!&quot;
                   </Text>
                 </View>
               </View>

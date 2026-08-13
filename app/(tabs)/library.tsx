@@ -9,9 +9,9 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Search, XCircle, BookOpen } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
-import { CONSTITUTION_SECTIONS, LegalSection } from '../../data/constitutionStore';
+import { CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
 
 const CATEGORY_FILTERS = [
   { id: 'all', label: 'All Rights' },
@@ -48,7 +48,7 @@ export default function LibraryScreen() {
 
         {/* SEARCH BAR */}
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={Colors.textMuted} />
+          <Search size={18} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search rights (e.g. search, arrest, quit notice)..."
@@ -58,7 +58,7 @@ export default function LibraryScreen() {
           />
           {searchQuery !== '' && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+              <XCircle size={18} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -124,10 +124,10 @@ export default function LibraryScreen() {
 
         {filteredSections.length === 0 && (
           <View style={styles.emptyBox}>
-            <Ionicons name="journal-outline" size={40} color={Colors.textMuted} />
+            <BookOpen size={40} color={Colors.textMuted} />
             <Text style={styles.emptyTitle}>No matching rights found</Text>
             <Text style={styles.emptySub}>
-              Try searching for terms like "privacy", "arrest", or "eviction".
+              Try searching for terms like &quot;privacy&quot;, &quot;arrest&quot;, or &quot;eviction&quot;.
             </Text>
           </View>
         )}

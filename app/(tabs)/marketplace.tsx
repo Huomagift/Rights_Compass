@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ShieldCheck, CheckCircle2, Star } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const MOCK_LAWYERS = [
@@ -61,7 +61,7 @@ export default function MarketplaceScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.bannerBox}>
-          <Ionicons name="shield-checkmark" size={24} color={Colors.primary} />
+          <ShieldCheck size={24} color={Colors.primary} />
           <View style={{ flex: 1, marginLeft: Spacing.sm }}>
             <Text style={styles.bannerTitle}>NBA Verification Guaranteed</Text>
             <Text style={styles.bannerSub}>
@@ -79,8 +79,7 @@ export default function MarketplaceScreen() {
                 <View style={styles.nameRow}>
                   <Text style={styles.lawyerName}>{lawyer.name}</Text>
                   {lawyer.verified && (
-                    <Ionicons
-                      name="checkmark-circle"
+                    <CheckCircle2
                       size={16}
                       color={Colors.success}
                       style={{ marginLeft: 4 }}
@@ -93,7 +92,7 @@ export default function MarketplaceScreen() {
               </View>
 
               <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={12} color={Colors.warning} />
+                <Star size={12} color={Colors.warning} fill={Colors.warning} />
                 <Text style={styles.ratingText}>{lawyer.rating}</Text>
               </View>
             </View>
