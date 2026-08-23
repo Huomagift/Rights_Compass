@@ -9,9 +9,10 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Clock, Bell, CheckCircle2, Trash2, ChevronRight, Flame } from 'lucide-react-native';
+import { Clock, Bell, CheckCircle2, Trash2, ChevronRight, Flame, LogOut } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
-import { getStoredProfile, resetStoredProfile, UserProfile } from '../../services/offlineStorage';
+import { resetStoredProfile, resetStreakToDayOne, updateDailyStreak, UserProfile } from '../../services/offlineStorage';
+import { signOutUser } from '../../services/authService';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -22,14 +23,38 @@ export default function ProfileScreen() {
   }, []);
 
   const loadProfile = async () => {
-    const p = await getStoredProfile();
+    const p = await updateDailyStreak();
     setProfile(p);
+  };
+
+  const handleResetStreak = async () => {
+    const updated = await resetStreakToDayOne();
+    setProfile(updated);
+    Alert.alert('Streak Reset', 'Your daily streak has been reset to 1 Day.');
+  };
+
+  const handleLogOut = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of Rights Compass?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await signOutUser();
+            router.replace('/onboarding' as any);
+          },
+        },
+      ]
+    );
   };
 
   const handleResetData = () => {
     Alert.alert(
-      'Reset Local Data',
-      'Under NDPR guidelines, this will delete all locally saved profile settings and streak counts. Are you sure?',
+      'Delete My Account & Data',
+      'Under NDPR guidelines, this will delete your saved profile settings, remote record, and streak counts. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -104,40 +129,59 @@ export default function ProfileScreen() {
               <Bell size={18} color={Colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={styles.settingTitle}>Offline Mode Status</Text>
+              <Text style={styles.settingTitle}>Offline Mode & Supabase Sync</Text>
               <Text style={styles.settingSub}>
-                1999 Constitution database cached on device
+                {profile.syncedToSupabase
+                  ? 'Profile synced with Supabase database'
+                  : '1999 Constitution cached on device'}
               </Text>
             </View>
             <CheckCircle2 size={20} color={Colors.success} />
           </View>
+
+          <TouchableOpacity style={styles.settingItem} onPress={handleResetStreak}>
+            <View style={styles.settingIconCircle}>
+              <Flame size={18} color={Colors.streakBadgeText} />
+            </View>
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <Text style={styles.settingTitle}>Reset Streak Counter</Text>
+              <Text style={styles.settingSub}>
+                Reset daily streak to Day 1
+              </Text>
+            </View>
+            <Text style={styles.changeBtnText}>Reset</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* PRIVACY & NDPR COMPLIANCE */}
-        <Text style={styles.sectionTitle}>Privacy & Data Protection (NDPR)</Text>
+        {/* ACCOUNT ACTIONS & PRIVACY */}
+        <Text style={styles.sectionTitle}>Account & Privacy (NDPR)</Text>
         <View style={styles.settingsGroup}>
-          <TouchableOpacity style={styles.settingItem} onPress={handleResetData}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleLogOut}>
+            <View style={[styles.settingIconCircle, { backgroundColor: 'rgba(150, 62, 20, 0.12)' }]}>
+              <LogOut size={18} color={Colors.primary} />
+            </View>
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <Text style={styles.settingTitle}>Log Out</Text>
+              <Text style={styles.settingSub}>Ends session and returns to sign-up</Text>
+            </View>
+            <ChevronRight size={16} color={Colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]} onPress={handleResetData}>
             <View style={[styles.settingIconCircle, { backgroundColor: '#FEE2E2' }]}>
               <Trash2 size={18} color="#DC2626" />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
               <Text style={[styles.settingTitle, { color: '#DC2626' }]}>
-                Delete My Local Data (NDPR Request)
+                Delete My Account & Data (NDPR)
               </Text>
               <Text style={styles.settingSub}>
-                Wipes stored profile and streak history
+                Wipes local profile, streak, and remote record
               </Text>
             </View>
             <ChevronRight size={16} color={Colors.textMuted} />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.reOnboardBtn}
-          onPress={() => router.push('/onboarding' as any)}
-        >
-          <Text style={styles.reOnboardBtnText}>Re-run Onboarding Setup</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

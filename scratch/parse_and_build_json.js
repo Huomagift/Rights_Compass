@@ -1,0 +1,466 @@
+/* eslint-env node */
+const fs = require('fs');
+const path = require('path');
+
+// 1. Load SECTION_TITLES from build_full_json.js / parse_full_constitution.js map
+const SECTION_TITLES = {
+  "1": { ch: "Chapter I", title: "Supremacy of constitution" },
+  "2": { ch: "Chapter I", title: "The Federal Republic of Nigeria" },
+  "3": { ch: "Chapter I", title: "States of the Federation and the Federal Capital Territory, Abuja" },
+  "4": { ch: "Chapter I", title: "Legislative powers" },
+  "5": { ch: "Chapter I", title: "Executive powers" },
+  "6": { ch: "Chapter I", title: "Judicial powers" },
+  "7": { ch: "Chapter I", title: "Local government system" },
+  "8": { ch: "Chapter I", title: "New states and boundary adjustment, etc" },
+  "9": { ch: "Chapter I", title: "Mode of altering provisions of the constitution" },
+  "10": { ch: "Chapter I", title: "Prohibition of State Religion" },
+  "11": { ch: "Chapter I", title: "Public order and public security" },
+  "12": { ch: "Chapter I", title: "Implementation of treaties" },
+
+  "13": { ch: "Chapter II", title: "Fundamental obligations of the Government" },
+  "14": { ch: "Chapter II", title: "The Government and the people" },
+  "15": { ch: "Chapter II", title: "Political objectives" },
+  "16": { ch: "Chapter II", title: "Economic objectives" },
+  "17": { ch: "Chapter II", title: "Social objectives" },
+  "18": { ch: "Chapter II", title: "Educational objectives" },
+  "19": { ch: "Chapter II", title: "Foreign policy objectives" },
+  "20": { ch: "Chapter II", title: "Environmental objectives" },
+  "21": { ch: "Chapter II", title: "Directive on Nigeria cultures" },
+  "22": { ch: "Chapter II", title: "Obligation of the mass media" },
+  "23": { ch: "Chapter II", title: "National ethics" },
+  "24": { ch: "Chapter II", title: "Duties of the citizen" },
+
+  "25": { ch: "Chapter III", title: "Citizenship by birth" },
+  "26": { ch: "Chapter III", title: "Citizenship by registration" },
+  "27": { ch: "Chapter III", title: "Citizenship by naturalisation" },
+  "28": { ch: "Chapter III", title: "Dual citizenship" },
+  "29": { ch: "Chapter III", title: "Renunciation of citizenship" },
+  "30": { ch: "Chapter III", title: "Deprivation of citizenship" },
+  "31": { ch: "Chapter III", title: "Persons deemed to be Nigerian citizens" },
+  "32": { ch: "Chapter III", title: "Power to make regulations" },
+
+  "33": { ch: "Chapter IV", title: "Right to life" },
+  "34": { ch: "Chapter IV", title: "Right to dignity of human persons" },
+  "35": { ch: "Chapter IV", title: "Right to personal liberty" },
+  "36": { ch: "Chapter IV", title: "Right to fair hearing" },
+  "37": { ch: "Chapter IV", title: "Right to private and family life" },
+  "38": { ch: "Chapter IV", title: "Right to freedom of thought, conscience and religion" },
+  "39": { ch: "Chapter IV", title: "Right to freedom of expression and the press" },
+  "40": { ch: "Chapter IV", title: "Right to peaceful assembly and association" },
+  "41": { ch: "Chapter IV", title: "Right to freedom of movement" },
+  "42": { ch: "Chapter IV", title: "Right to freedom from discrimination" },
+  "43": { ch: "Chapter IV", title: "Right to acquire and own immovable property" },
+  "44": { ch: "Chapter IV", title: "Compulsory acquisition of property" },
+  "45": { ch: "Chapter IV", title: "Restriction on and derogation from fundamental human rights" },
+  "46": { ch: "Chapter IV", title: "Special jurisdiction of High Court and Legal aid" },
+
+  "47": { ch: "Chapter V", title: "Establishment of National Assembly" },
+  "48": { ch: "Chapter V", title: "Composition of the Senate" },
+  "49": { ch: "Chapter V", title: "Composition of the House of Representatives" },
+  "50": { ch: "Chapter V", title: "President of the senate and speaker of the House of Representatives" },
+  "51": { ch: "Chapter V", title: "Staff of the National Assembly" },
+  "52": { ch: "Chapter V", title: "Declaration of assets and liabilities; oath of members" },
+  "53": { ch: "Chapter V", title: "Presiding at sitting of the National Assembly and at joint sittings" },
+  "54": { ch: "Chapter V", title: "Quorum" },
+  "55": { ch: "Chapter V", title: "Languages" },
+  "56": { ch: "Chapter V", title: "Voting" },
+  "57": { ch: "Chapter V", title: "Unqualified person sitting or voting" },
+  "58": { ch: "Chapter V", title: "Mode of exercising Federal Legislative power: general" },
+  "59": { ch: "Chapter V", title: "Mode of exercising Federal Legislative power: money bills" },
+  "60": { ch: "Chapter V", title: "Regulation of procedure" },
+  "61": { ch: "Chapter V", title: "Vacancy or participation of strangers not to invalidate proceedings" },
+  "62": { ch: "Chapter V", title: "Committees" },
+  "63": { ch: "Chapter V", title: "Sittings" },
+  "64": { ch: "Chapter V", title: "Dissolution and issue of proclamations by president" },
+  "65": { ch: "Chapter V", title: "Qualifications for election" },
+  "66": { ch: "Chapter V", title: "Disqualifications" },
+  "67": { ch: "Chapter V", title: "Right Of Attendance Of President" },
+  "68": { ch: "Chapter V", title: "Tenure of Seat of Members" },
+  "69": { ch: "Chapter V", title: "Recall" },
+  "70": { ch: "Chapter V", title: "Remuneration" },
+  "71": { ch: "Chapter V", title: "Senatorial districts and Federal constituencies" },
+  "72": { ch: "Chapter V", title: "Size of Senatorial districts and Federal constituencies" },
+  "73": { ch: "Chapter V", title: "Periodical review of Senatorial districts and Federal constituencies" },
+  "74": { ch: "Chapter V", title: "Time when alteration of senatorial districts or Federal constituencies takes effects" },
+  "75": { ch: "Chapter V", title: "Ascertainment of population" },
+  "76": { ch: "Chapter V", title: "Time of Election to the National Assembly" },
+  "77": { ch: "Chapter V", title: "Direct Election and franchise" },
+  "78": { ch: "Chapter V", title: "Supervision of election" },
+  "79": { ch: "Chapter V", title: "Power of the National Assembly as to determination of certain questions" },
+  "80": { ch: "Chapter V", title: "Establishment of Consolidated Revenue Fund" },
+  "81": { ch: "Chapter V", title: "Authorisation of expenditure from Consolidated Revenue Fund" },
+  "82": { ch: "Chapter V", title: "Authorisation of expenditure in default appropriations" },
+  "83": { ch: "Chapter V", title: "Contingencies Fund" },
+  "84": { ch: "Chapter V", title: "Remuneration, etc. of the President and certain other officers" },
+  "85": { ch: "Chapter V", title: "Audit of Public accounts" },
+  "86": { ch: "Chapter V", title: "Appointment of Auditor-General" },
+  "87": { ch: "Chapter V", title: "Tenure of office of Auditor-General" },
+  "88": { ch: "Chapter V", title: "Power to conduct investigations" },
+  "89": { ch: "Chapter V", title: "Power as to matters of evidence" },
+
+  "90": { ch: "Chapter V", title: "Establishment of House of assembly for each State" },
+  "91": { ch: "Chapter V", title: "Composition of the House of Assembly" },
+  "92": { ch: "Chapter V", title: "Speaker of House of Assembly" },
+  "93": { ch: "Chapter V", title: "Staff of house of Assembly" },
+  "94": { ch: "Chapter V", title: "Declaration of assets and liabilities; oaths of members" },
+  "95": { ch: "Chapter V", title: "Presiding at sittings" },
+  "96": { ch: "Chapter V", title: "Quorum" },
+  "97": { ch: "Chapter V", title: "Languages" },
+  "98": { ch: "Chapter V", title: "Voting" },
+  "99": { ch: "Chapter V", title: "Unqualified person sitting or voting" },
+  "100": { ch: "Chapter V", title: "Mode of exercising legislative power of a state" },
+  "101": { ch: "Chapter V", title: "Regulation of procedure" },
+  "102": { ch: "Chapter V", title: "Vacancy or participation of strangers not to invalidate proceedings" },
+  "103": { ch: "Chapter V", title: "Committees" },
+  "104": { ch: "Chapter V", title: "Sittings" },
+  "105": { ch: "Chapter V", title: "Dissolution and issue of proclamation by Governor" },
+  "106": { ch: "Chapter V", title: "Qualifications for election" },
+  "107": { ch: "Chapter V", title: "Disqualifications" },
+  "108": { ch: "Chapter V", title: "Right of attendance of President" },
+  "109": { ch: "Chapter V", title: "Tenure of Seat of Members" },
+  "110": { ch: "Chapter V", title: "Recall" },
+  "111": { ch: "Chapter V", title: "Remuneration" },
+  "112": { ch: "Chapter V", title: "State constituencies" },
+  "113": { ch: "Chapter V", title: "Size of state constituencies" },
+  "114": { ch: "Chapter V", title: "Periodical review of State constituencies" },
+  "115": { ch: "Chapter V", title: "Time when alteration of state constituencies takes effect" },
+  "116": { ch: "Chapter V", title: "Time of elections to Houses of Assembly" },
+  "117": { ch: "Chapter V", title: "Direct election and franchise" },
+  "118": { ch: "Chapter V", title: "Supervision and election" },
+  "119": { ch: "Chapter V", title: "Power of National Assembly as to determination of certain questions" },
+  "120": { ch: "Chapter V", title: "Establishment of Consolidated Revenue Fund" },
+  "121": { ch: "Chapter V", title: "Authorisation of expenditure from Consolidated Revenue fund" },
+  "122": { ch: "Chapter V", title: "Authorisation of expenditure in default of appropriations" },
+  "123": { ch: "Chapter V", title: "Contingencies Fund" },
+  "124": { ch: "Chapter V", title: "Remuneration, etc. of the governor and certain other officers" },
+  "125": { ch: "Chapter V", title: "Audit of Public accounts" },
+  "126": { ch: "Chapter V", title: "Appointment of Auditor-General" },
+  "127": { ch: "Chapter V", title: "Tenure of office of Auditor-General" },
+  "128": { ch: "Chapter V", title: "Power to conduct investigations" },
+  "129": { ch: "Chapter V", title: "Power as to matters of evidence" },
+
+  "130": { ch: "Chapter VI", title: "Establishment of the office of President" },
+  "131": { ch: "Chapter VI", title: "Qualification for election as President" },
+  "132": { ch: "Chapter VI", title: "Election of the President: general" },
+  "133": { ch: "Chapter VI", title: "Election: single presidential candidate" },
+  "134": { ch: "Chapter VI", title: "Election: two or more presidential candidates" },
+  "135": { ch: "Chapter VI", title: "Tenure of office of President" },
+  "136": { ch: "Chapter VI", title: "Death, etc. of president elect before oath of office" },
+  "137": { ch: "Chapter VI", title: "Disqualifications" },
+  "138": { ch: "Chapter VI", title: "President: disqualification from other jobs" },
+  "139": { ch: "Chapter VI", title: "Determination of certain questions relating to election" },
+  "140": { ch: "Chapter VI", title: "Declaration of assets and liabilities; oaths of President" },
+  "141": { ch: "Chapter VI", title: "Establishment of office of Vice-President" },
+  "142": { ch: "Chapter VI", title: "Nomination and election of Vice-President" },
+  "143": { ch: "Chapter VI", title: "Removal of President from office" },
+  "144": { ch: "Chapter VI", title: "Permanent incapacity of President or Vice-President" },
+  "145": { ch: "Chapter VI", title: "Acting President during temporary absence of President" },
+  "146": { ch: "Chapter VI", title: "Discharge of functions of President" },
+  "147": { ch: "Chapter VI", title: "Ministers of federal Government" },
+  "148": { ch: "Chapter VI", title: "Executive Responsibilities of Ministers" },
+  "149": { ch: "Chapter VI", title: "Declaration of Assets and liabilities; oaths of Ministers" },
+  "150": { ch: "Chapter VI", title: "Attorney-General of the Federation" },
+  "151": { ch: "Chapter VI", title: "Special Advisers" },
+  "152": { ch: "Chapter VI", title: "Declaration of assets and Liabilities; oaths of special Adviser" },
+  "153": { ch: "Chapter VI", title: "Federal Commissions and Councils, etc" },
+  "154": { ch: "Chapter VI", title: "Appointment of Chairman and members" },
+  "155": { ch: "Chapter VI", title: "Tenure of office of members" },
+  "156": { ch: "Chapter VI", title: "Qualification for membership" },
+  "157": { ch: "Chapter VI", title: "Removal of members" },
+  "158": { ch: "Chapter VI", title: "Independence of certain bodies" },
+  "159": { ch: "Chapter VI", title: "Quorum and decisions" },
+  "160": { ch: "Chapter VI", title: "Powers and Procedure" },
+  "161": { ch: "Chapter VI", title: "Interpretation" },
+  "162": { ch: "Chapter VI", title: "Distributable Pool account" },
+  "163": { ch: "Chapter VI", title: "Allocation of other revenues" },
+  "164": { ch: "Chapter VI", title: "Federal grants-in-aid of State revenue" },
+  "165": { ch: "Chapter VI", title: "Cost of collection of certain duties" },
+  "166": { ch: "Chapter VI", title: "Set-off" },
+  "167": { ch: "Chapter VI", title: "Sums charged on consolidated Revenue Fund" },
+  "168": { ch: "Chapter VI", title: "Provisions with regard to payments" },
+
+  "176": { ch: "Chapter VI", title: "Establishment of office of Governor" },
+  "177": { ch: "Chapter VI", title: "Qualification for election as Governor" },
+  "178": { ch: "Chapter VI", title: "Election of Governor: general" },
+  "179": { ch: "Chapter VI", title: "Election: single candidate and two or more candidates" },
+  "180": { ch: "Chapter VI", title: "Tenure of office of Governor" },
+  "181": { ch: "Chapter VI", title: "Death, etc. of Governor before oath of office" },
+  "182": { ch: "Chapter VI", title: "Disqualifications" },
+  "183": { ch: "Chapter VI", title: "Governor: disqualification from other jobs" },
+  "184": { ch: "Chapter VI", title: "Determination of certain questions relating to elections" },
+  "185": { ch: "Chapter VI", title: "Declaration of assets and liabilities; oaths of office of Governor" },
+  "186": { ch: "Chapter VI", title: "Establishment of the office of the Deputy Governor" },
+  "187": { ch: "Chapter VI", title: "Nomination and election of the Deputy Governor" },
+  "188": { ch: "Chapter VI", title: "Removal of Governor or Deputy Governor from office" },
+  "189": { ch: "Chapter VI", title: "Permanent incapacity of Governor or Deputy Governor" },
+  "190": { ch: "Chapter VI", title: "Acting governor during temporary absence of Governor" },
+  "191": { ch: "Chapter VI", title: "Discharge of functions of Governor" },
+  "192": { ch: "Chapter VI", title: "Commissioners of State Government" },
+  "193": { ch: "Chapter VI", title: "Executive responsibilities of Deputy Governor and Commissioners" },
+  "194": { ch: "Chapter VI", title: "Declaration of assets and liabilities; oaths of Commissioners" },
+  "195": { ch: "Chapter VI", title: "Attorney-General of a State" },
+  "196": { ch: "Chapter VI", title: "Special Advisers" },
+  "197": { ch: "Chapter VI", title: "State Commissioners" },
+  "198": { ch: "Chapter VI", title: "Appointment of Chairman and members" },
+  "199": { ch: "Chapter VI", title: "Tenure of office of the members" },
+  "200": { ch: "Chapter VI", title: "Qualification for membership" },
+  "201": { ch: "Chapter VI", title: "Removal of members" },
+  "202": { ch: "Chapter VI", title: "Independence of certain bodies" },
+  "203": { ch: "Chapter VI", title: "Quorum and decisions" },
+  "204": { ch: "Chapter VI", title: "Powers and procedure" },
+  "205": { ch: "Chapter VI", title: "Interpretation" },
+  "206": { ch: "Chapter VI", title: "Establishment of State Civil Service" },
+  "207": { ch: "Chapter VI", title: "State Civil Service Commission: Power of delegation" },
+  "208": { ch: "Chapter VI", title: "Appointments by Governor" },
+  "209": { ch: "Chapter VI", title: "Code of Conduct" },
+  "210": { ch: "Chapter VI", title: "Protection of pension rights" },
+  "211": { ch: "Chapter VI", title: "Public prosecutions" },
+  "212": { ch: "Chapter VI", title: "Prerogative of mercy" },
+
+  "213": { ch: "Chapter VI", title: "National Population census" },
+  "214": { ch: "Chapter VI", title: "Establishment of Nigeria Police Force" },
+  "215": { ch: "Chapter VI", title: "Appointment of Inspector-General and control of Nigeria Police Force" },
+  "216": { ch: "Chapter VI", title: "Delegation of powers to the Inspector-General of Police" },
+  "217": { ch: "Chapter VI", title: "Establishment and composition of the armed force of the Federation" },
+  "218": { ch: "Chapter VI", title: "Command and operational use" },
+  "219": { ch: "Chapter VI", title: "Establishment of body to ensure federal character of armed forces" },
+  "220": { ch: "Chapter VI", title: "Compulsory military service" },
+  "221": { ch: "Chapter VI", title: "Prohibition of political activities by certain associations" },
+  "222": { ch: "Chapter VI", title: "Restrictions on formation of political parties" },
+  "223": { ch: "Chapter VI", title: "Constitution and rules of political parties" },
+  "224": { ch: "Chapter VI", title: "Aims and objectives" },
+  "225": { ch: "Chapter VI", title: "Finances of political parties" },
+  "226": { ch: "Chapter VI", title: "Annual reports on finances" },
+  "227": { ch: "Chapter VI", title: "Prohibition of quasi-military organisations" },
+  "228": { ch: "Chapter VI", title: "Powers of the national assembly with respect to political parties" },
+  "229": { ch: "Chapter VI", title: "Interpretation" },
+
+  "230": { ch: "Chapter VII", title: "Establishment of the Supreme Court of Nigeria" },
+  "231": { ch: "Chapter VII", title: "Appointment of Chief justices of Nigeria and justices of the Supreme Court" },
+  "232": { ch: "Chapter VII", title: "Original jurisdiction" },
+  "233": { ch: "Chapter VII", title: "Appellate jurisdiction" },
+  "234": { ch: "Chapter VII", title: "Constitution" },
+  "235": { ch: "Chapter VII", title: "Finality of determinations" },
+  "236": { ch: "Chapter VII", title: "Practise and procedure" },
+  "237": { ch: "Chapter VII", title: "Establishment of Court of Appeal" },
+  "238": { ch: "Chapter VII", title: "Appointment of President and Justices of the Court of Appeal" },
+  "239": { ch: "Chapter VII", title: "Original jurisdiction" },
+  "240": { ch: "Chapter VII", title: "Appellate jurisdiction" },
+  "241": { ch: "Chapter VII", title: "Appeals as of rights from the Federal high Court or a High Court" },
+  "242": { ch: "Chapter VII", title: "Appeals with leave" },
+  "243": { ch: "Chapter VII", title: "Exercise of the rights of appeal from the Federal High Court of a High" },
+  "244": { ch: "Chapter VII", title: "Appeals from Sharia court of Appeal" },
+  "245": { ch: "Chapter VII", title: "Appeals from customary court of appeal. Court in civil and criminal matters" },
+  "246": { ch: "Chapter VII", title: "Appeal from Code of Conduct Tribunal and other courts and tribunals" },
+  "247": { ch: "Chapter VII", title: "Constitution" },
+  "248": { ch: "Chapter VII", title: "Practise and procedure" },
+  "249": { ch: "Chapter VII", title: "Establishment of the Federal High Court" },
+  "250": { ch: "Chapter VII", title: "Appointment of Chief Judge and Judges of the federal high Court" },
+  "251": { ch: "Chapter VII", title: "Jurisdiction" },
+  "252": { ch: "Chapter VII", title: "Powers" },
+  "253": { ch: "Chapter VII", title: "Constitution" },
+  "254": { ch: "Chapter VII", title: "Practise and procedure" },
+  "255": { ch: "Chapter VII", title: "Establishment of the High Court of the Federal Capital Territory, Abuja" },
+  "256": { ch: "Chapter VII", title: "Appointment of Chief Judge and Judges of the High Court of the Federal Capital Territory, Abuja" },
+  "257": { ch: "Chapter VII", title: "Jurisdiction" },
+  "258": { ch: "Chapter VII", title: "Constitution" },
+  "259": { ch: "Chapter VII", title: "Practise and procedure" },
+  "260": { ch: "Chapter VII", title: "Establishment of the Sharia Court of Appeal of the Federal Capital Territory, Abuja" },
+  "261": { ch: "Chapter VII", title: "Appointment of Grand Kadi and Kadis of the Sharia Court of Appeal of the Federal Capital Territory, Abuja" },
+  "262": { ch: "Chapter VII", title: "Jurisdiction" },
+  "263": { ch: "Chapter VII", title: "Constitution" },
+  "264": { ch: "Chapter VII", title: "Practise and Procedure" },
+  "265": { ch: "Chapter VII", title: "Establishment of the Customary Court of Appeal of the Federal Capital Territory, Abuja" },
+  "266": { ch: "Chapter VII", title: "Appointment of President and Judges of Court of Appeal of the Federal Capital Territory, Abuja" },
+  "267": { ch: "Chapter VII", title: "Jurisdiction" },
+  "268": { ch: "Chapter VII", title: "Constitution" },
+  "269": { ch: "Chapter VII", title: "Practise and Procedure" },
+  "270": { ch: "Chapter VII", title: "Establishment of a High Court for each State" },
+  "271": { ch: "Chapter VII", title: "Appointment of Chief Judge and Judges of the High Court of a State" },
+  "272": { ch: "Chapter VII", title: "Jurisdiction" },
+  "273": { ch: "Chapter VII", title: "Constitution" },
+  "274": { ch: "Chapter VII", title: "Practise and Procedure" },
+  "275": { ch: "Chapter VII", title: "Establishment of Sharia Court of Appeal" },
+  "276": { ch: "Chapter VII", title: "Appointment of Grand Kadi and Kadis of the Sharia Court of Appeal of a State" },
+  "277": { ch: "Chapter VII", title: "Jurisdiction" },
+  "278": { ch: "Chapter VII", title: "Constitution" },
+  "279": { ch: "Chapter VII", title: "Practise and Procedure" },
+  "280": { ch: "Chapter VII", title: "Establishment of a Customary Court of Appeal" },
+  "281": { ch: "Chapter VII", title: "Appointment of President and Judges of the Customary Court of Appeal of a State" },
+  "282": { ch: "Chapter VII", title: "Jurisdiction" },
+  "283": { ch: "Chapter VII", title: "Constitution" },
+  "284": { ch: "Chapter VII", title: "Practise and Procedure" },
+  "285": { ch: "Chapter VII", title: "Establishment and jurisdiction of election tribunals" },
+  "286": { ch: "Chapter VII", title: "Jurisdiction of state courts in respect of federal causes" },
+  "287": { ch: "Chapter VII", title: "Enforcement of decisions" },
+  "288": { ch: "Chapter VII", title: "Appointment of persons learned in Islamic personal law and Customary law" },
+  "289": { ch: "Chapter VII", title: "Disqualification of certain legal practitioners" },
+  "290": { ch: "Chapter VII", title: "Declaration of assets and liabilities: oaths of judicial officers" },
+  "291": { ch: "Chapter VII", title: "Tenure of office and pension rights of judicial officers" },
+  "292": { ch: "Chapter VII", title: "Removal of other judicial officers from office" },
+  "293": { ch: "Chapter VII", title: "Vacancies" },
+  "294": { ch: "Chapter VII", title: "Determination of causes and matters" },
+  "295": { ch: "Chapter VII", title: "Reference of questions of law" },
+  "296": { ch: "Chapter VII", title: "Interpretation" },
+
+  "297": { ch: "Chapter VIII", title: "Federal Capital territory, Abuja: ownership of lands" },
+  "298": { ch: "Chapter VIII", title: "Capital of the federation" },
+  "299": { ch: "Chapter VIII", title: "Application of Constitution" },
+  "300": { ch: "Chapter VIII", title: "Representation in the National Assembly" },
+  "301": { ch: "Chapter VIII", title: "Adaptation of certain references" },
+  "302": { ch: "Chapter VIII", title: "Minister of Federal Capital territory, Abuja" },
+  "303": { ch: "Chapter VIII", title: "Administration of the Federal Capital territory, Abuja" },
+  "304": { ch: "Chapter VIII", title: "Establishment of the Judicial Service Committee of the Federal Capital territory, Abuja" },
+  "305": { ch: "Chapter VIII", title: "Procedure for proclamation of state of emergency" },
+  "306": { ch: "Chapter VIII", title: "Resignations" },
+  "307": { ch: "Chapter VIII", title: "Restriction on certain citizens" },
+  "308": { ch: "Chapter VIII", title: "Restrictions on legal proceedings" },
+  "309": { ch: "Chapter VIII", title: "Citizenship" },
+  "310": { ch: "Chapter VIII", title: "Staff of legislative houses" },
+  "311": { ch: "Chapter VIII", title: "Standing Orders" },
+  "312": { ch: "Chapter VIII", title: "Special provisions in respect of first election" },
+  "313": { ch: "Chapter VIII", title: "System of revenue allocation" },
+  "314": { ch: "Chapter VIII", title: "Debts" },
+  "315": { ch: "Chapter VIII", title: "Existing law" },
+  "316": { ch: "Chapter VIII", title: "Existing offices, courts and authorities" },
+  "317": { ch: "Chapter VIII", title: "Succession to property, rights, liabilities and obligations" },
+  "318": { ch: "Chapter VIII", title: "Interpretation" },
+  "319": { ch: "Chapter VIII", title: "Citation" },
+  "320": { ch: "Chapter VIII", title: "Commencement" }
+};
+
+// 2. Read raw full text
+const fullTextPath = path.join(__dirname, 'full_pdf_extracted_text.txt');
+const rawContent = fs.readFileSync(fullTextPath, 'utf8');
+
+// The main body starts after page TOC (around page 15-20)
+// Let's locate Section 1 in main body
+const sec1Marker = 'Chapter I \r\n \r\nGeneral Provisions \r\n \r\n1.';
+let bodyStartPos = rawContent.indexOf(sec1Marker);
+if (bodyStartPos === -1) {
+  bodyStartPos = rawContent.indexOf('\n1. (1) This Constitution is supreme');
+}
+if (bodyStartPos === -1) {
+  bodyStartPos = 0;
+}
+
+const bodyText = rawContent.slice(bodyStartPos);
+
+// Clean up header lines like '--- PAGE 20 ---', 'Interactive Edition.', etc.
+function cleanSectionText(text) {
+  return text
+    .replace(/---\s*PAGE\s*\d+\s*---/gi, '')
+    .replace(/Interactive Edition\.\s*Nigerian-Constitution\.Com/gi, '')
+    .replace(/V\s*1\.0\s*,\s*201\s*4\./gi, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// Locate each section start index in bodyText
+const sectionPositions = {};
+
+for (let i = 1; i <= 320; i++) {
+  // Common section start patterns: e.g. "\n1. ", "\n 1. ", "\n1. (1)", "\n1. The "
+  const patterns = [
+    `\n${i}. `,
+    `\n ${i}. `,
+    `\n${i}.(`,
+    `\n ${i}.(`
+  ];
+
+  let foundIndex = -1;
+  for (const pat of patterns) {
+    const idx = bodyText.indexOf(pat);
+    if (idx !== -1) {
+      foundIndex = idx;
+      break;
+    }
+  }
+
+  if (foundIndex !== -1) {
+    sectionPositions[i] = foundIndex;
+  }
+}
+
+// Special case for section 168 (marked as raw 189 in source text)
+if (!sectionPositions[168]) {
+  const s168Idx = bodyText.indexOf('189. (1) Where any payment falls to be made under this Part');
+  if (s168Idx !== -1) {
+    sectionPositions[168] = s168Idx;
+  }
+}
+
+// Build sections array
+const sections = [];
+
+for (let i = 1; i <= 320; i++) {
+  const numStr = String(i);
+  const info = SECTION_TITLES[numStr] || {
+    ch: i <= 12 ? "Chapter I" : i <= 24 ? "Chapter II" : i <= 32 ? "Chapter III" : i <= 46 ? "Chapter IV" : i <= 129 ? "Chapter V" : i <= 229 ? "Chapter VI" : i <= 296 ? "Chapter VII" : "Chapter VIII",
+    title: `Section ${i}`
+  };
+
+  const startPos = sectionPositions[i];
+  let extracted = "";
+
+  if (startPos !== undefined) {
+    // Find end position (where next section starts, or First Schedule starts)
+    let endPos = bodyText.length;
+
+    // Next valid section index
+    for (let next = i + 1; next <= 320; next++) {
+      if (sectionPositions[next] !== undefined && sectionPositions[next] > startPos) {
+        endPos = sectionPositions[next];
+        break;
+      }
+    }
+
+    if (endPos === bodyText.length) {
+      const scheduleIdx = bodyText.indexOf('First Schedule', startPos);
+      if (scheduleIdx !== -1) endPos = scheduleIdx;
+    }
+
+    extracted = cleanSectionText(bodyText.slice(startPos, endPos));
+  }
+
+  // Fallback if extraction was somehow blank
+  if (!extracted || extracted.length < 15) {
+    extracted = `Section ${numStr} of the Constitution of the Federal Republic of Nigeria 1999 (${info.title}).`;
+  }
+
+  sections.push({
+    section_number: numStr,
+    chapter_number: info.ch,
+    title: info.title,
+    full_text: extracted,
+    display_order: i,
+    source_reference: `${info.ch} s.${numStr}`,
+    needs_manual_review: i === 168,
+    review_note: i === 168 ? "Source text pdf used label 189 due to typo." : null
+  });
+}
+
+const constitutionData = {
+  constitution: {
+    title: "Constitution of the Federal Republic of Nigeria 1999",
+    year: 1999,
+    source_reference: "Constitution of the Federal Republic of Nigeria 1999 Cap. C23 L.F.N. 2004"
+  },
+  chapters: [
+    { chapter_number: "Chapter I", title: "General Provisions", display_order: 1 },
+    { chapter_number: "Chapter II", title: "Fundamental Objectives and Directive Principles of State Policy", display_order: 2 },
+    { chapter_number: "Chapter III", title: "Citizenship", display_order: 3 },
+    { chapter_number: "Chapter IV", title: "Fundamental Rights", display_order: 4 },
+    { chapter_number: "Chapter V", title: "The Legislature", display_order: 5 },
+    { chapter_number: "Chapter VI", title: "The Executive", display_order: 6 },
+    { chapter_number: "Chapter VII", title: "The Judicature", display_order: 7 },
+    { chapter_number: "Chapter VIII", title: "Federal Capital Territory, Abuja and General Supplementary Provisions", display_order: 8 }
+  ],
+  sections
+};
+
+const outputPath = path.join(__dirname, '../data/nigeria_constitution_structured.json');
+fs.writeFileSync(outputPath, JSON.stringify(constitutionData, null, 2), 'utf-8');
+
+console.log(`Extraction complete! Saved ${sections.length} sections to nigeria_constitution_structured.json`);

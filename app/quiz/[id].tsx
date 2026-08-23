@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, CheckCircle2, AlertCircle, Flame } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { SAMPLE_QUIZZES } from '../../data/mockData';
+import { updateDailyStreak } from '../../services/offlineStorage';
 
 export default function QuizScreen() {
   const router = useRouter();
@@ -20,8 +21,16 @@ export default function QuizScreen() {
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [newStreakCount, setNewStreakCount] = useState<number | null>(null);
 
   const chosenOptionObj = quiz.options.find((o) => o.id === selectedOption);
+
+  const handleSubmit = async () => {
+    if (!selectedOption) return;
+    const updated = await updateDailyStreak();
+    setNewStreakCount(updated.streakCount);
+    setSubmitted(true);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -36,7 +45,9 @@ export default function QuizScreen() {
         <Text style={styles.headerTitle}>Daily Scenario Quiz</Text>
         <View style={styles.streakBadge}>
           <Flame size={12} color={Colors.streakBadgeText} style={{ marginRight: 4 }} />
-          <Text style={styles.streakText}>Streak +1</Text>
+          <Text style={styles.streakText}>
+            {newStreakCount !== null ? `${newStreakCount} Day Streak` : 'Streak Active'}
+          </Text>
         </View>
       </View>
 
@@ -105,7 +116,7 @@ export default function QuizScreen() {
                   { color: chosenOptionObj?.isCorrect ? Colors.success : Colors.warning },
                 ]}
               >
-                {chosenOptionObj?.isCorrect ? 'Correct Answer! ✅' : 'Not Quite 💡'}
+                {chosenOptionObj?.isCorrect ? 'Correct Answer! 🔥 Daily Goal Met' : 'Scenario Review 💡'}
               </Text>
             </View>
 
@@ -131,9 +142,9 @@ export default function QuizScreen() {
               !selectedOption && styles.submitBtnDisabled,
             ]}
             disabled={!selectedOption}
-            onPress={() => setSubmitted(true)}
+            onPress={handleSubmit}
           >
-            <Text style={styles.submitBtnText}>Submit Answer</Text>
+            <Text style={styles.submitBtnText}>Submit Answer & Claim Streak</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

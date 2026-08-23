@@ -2,26 +2,23 @@ import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/theme';
-import { getStoredProfile } from '../services/offlineStorage';
+import { clearAllLocalStorage } from '../services/offlineStorage';
 
 export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    async function checkOnboarding() {
+    async function resetAndStartFresh() {
       try {
-        const profile = await getStoredProfile();
-        if (profile.onboarded) {
-          router.replace('/(tabs)' as any);
-        } else {
-          router.replace('/onboarding' as any);
-        }
+        // Clear local storage for fresh onboarding testing
+        await clearAllLocalStorage();
+        router.replace('/onboarding' as any);
       } catch {
         router.replace('/onboarding' as any);
       }
     }
 
-    checkOnboarding();
+    resetAndStartFresh();
   }, [router]);
 
   return (

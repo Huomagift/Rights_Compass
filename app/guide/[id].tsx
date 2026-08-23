@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Share2, Bookmark } from 'lucide-react-native';
+import { ArrowLeft, Share2, Bookmark, Scale, CheckCircle2 } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { FEATURED_GUIDE, RECENT_GUIDES } from '../../data/mockData';
 import { CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
@@ -20,16 +20,11 @@ export default function GuideDetailScreen() {
   // Find in guides or constitution sections
   const allGuides = [FEATURED_GUIDE, ...RECENT_GUIDES];
   const guide = allGuides.find((g) => g.id === id);
-  const constSection = CONSTITUTION_SECTIONS.find((s) => s.id === id);
+  const constSection = CONSTITUTION_SECTIONS.find((s) => s.id === id || s.sectionNumber === parseInt(id || '', 10));
 
   const title = guide?.title || constSection?.title || 'Legal Rights Guide';
-  const category = guide?.category || constSection?.chapter || 'Fundamental Rights';
-  const citation = guide?.citation || `${constSection?.chapter} — ${constSection?.section}`;
-  const contentParagraphs = guide?.content || [
-    constSection?.plainLanguageSummary || '',
-    `Verbatim Statute Text: "${constSection?.verbatimText || ''}"`,
-    `Key Takeaway: ${constSection?.keyTakeaway || ''}`,
-  ];
+  const category = guide?.category || constSection?.chapter || '1999 Constitution of Nigeria';
+  const citation = guide?.citation || `${constSection?.section} — ${constSection?.chapter}`;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -61,20 +56,52 @@ export default function GuideDetailScreen() {
 
         <View style={styles.citationBox}>
           <Bookmark size={14} color={Colors.primary} />
-          <Text style={styles.citationText}>Legal Source: {citation}</Text>
+          <Text style={styles.citationText}>Legal Citation: {citation}</Text>
         </View>
 
-        {contentParagraphs.map((para, i) => (
-          <Text key={i} style={styles.paragraph}>
-            {para}
-          </Text>
-        ))}
+        {guide ? (
+          guide.content.map((para, i) => (
+            <Text key={i} style={styles.paragraph}>
+              {para}
+            </Text>
+          ))
+        ) : constSection ? (
+          <>
+            {/* PLAIN LANGUAGE SUMMARY */}
+            <View style={styles.summaryCard}>
+              <Text style={styles.sectionHeaderLabel}>PLAIN LANGUAGE SUMMARY</Text>
+              <Text style={styles.summaryBody}>{constSection.plainLanguageSummary}</Text>
+            </View>
+
+            {/* KEY TAKEAWAY */}
+            <View style={styles.takeawayCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <CheckCircle2 size={16} color={Colors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.takeawayTitle}>KEY TAKEAWAY</Text>
+              </View>
+              <Text style={styles.takeawayBody}>{constSection.keyTakeaway}</Text>
+            </View>
+
+            {/* VERBATIM LEGAL TEXT */}
+            <View style={styles.verbatimCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Scale size={18} color={Colors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.verbatimTitle}>VERBATIM CONSTITUTIONAL TEXT</Text>
+              </View>
+              <Text style={styles.verbatimBody}>
+                {constSection.verbatimText}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.paragraph}>Legal section content not found.</Text>
+        )}
 
         {/* QUIZ CTA CARD */}
         <View style={styles.quizCard}>
-          <Text style={styles.quizCardTitle}>Ready to test your memory?</Text>
+          <Text style={styles.quizCardTitle}>Ready to test your knowledge?</Text>
           <Text style={styles.quizCardSub}>
-            Answer a 1-minute scenario quiz on this guide to maintain your 12-day streak!
+            Answer a quick 1-minute scenario quiz on this provision to earn knowledge points!
           </Text>
           <TouchableOpacity
             style={styles.startQuizBtn}
@@ -144,7 +171,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   mainTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
     marginBottom: Spacing.xs,
@@ -155,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.md,
     padding: Spacing.sm,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
     ...Shadows.sm,
@@ -171,6 +198,69 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: Colors.text,
     marginBottom: Spacing.md,
+  },
+  summaryCard: {
+    backgroundColor: Colors.cardWhite,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
+  },
+  sectionHeaderLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  summaryBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  takeawayCard: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  takeawayTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 0.5,
+  },
+  takeawayBody: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+    color: Colors.text,
+  },
+  verbatimCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
+  },
+  verbatimTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 0.5,
+  },
+  verbatimBody: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: Colors.text,
+    fontFamily: undefined,
   },
   quizCard: {
     backgroundColor: Colors.cardBackground,
