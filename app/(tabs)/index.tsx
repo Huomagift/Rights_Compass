@@ -27,10 +27,85 @@ import {
   Shield,
 } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
-import { getStoredProfile, UserProfile } from '../../services/offlineStorage';
-import { FEATURED_GUIDE, RECENT_GUIDES } from '../../data/mockData';
+import { updateDailyStreak, UserProfile } from '../../services/offlineStorage';
+import { FEATURED_GUIDE as DEFAULT_FEATURED_GUIDE, RECENT_GUIDES as DEFAULT_RECENT_GUIDES, GuideItem } from '../../data/mockData';
 
 const { width } = Dimensions.get('window');
+
+const ALL_GUIDE_CANDIDATES: (GuideItem & { interestId: string })[] = [
+  {
+    id: 'police-stops',
+    interestId: 'police',
+    category: 'Police & Civil Rights',
+    title: 'Police Stops & Phone Searches',
+    subtitle: 'What to do when stopped at a road checkpoint. Search & arrest rules under s.35 & s.37.',
+    badge: 'TAILORED FOR YOU',
+    readTime: '4 min read',
+    iconName: 'Shield',
+    citation: 'Constitution 1999 s.35, s.37 & ACJA s.9',
+    content: [
+      'Officers cannot search your mobile phone unless there is a warrant or reasonable suspicion of a felony.',
+      'Always stay calm, ask polite questions ("May I know why I am being stopped?"), and do not resist physically.'
+    ]
+  },
+  {
+    id: 'tenant-2024',
+    interestId: 'tenancy',
+    category: 'Housing & Property',
+    title: 'Navigating Tenant Rights',
+    subtitle: 'A comprehensive look at housing laws, quit notice requirements, and rent protection.',
+    badge: 'TAILORED FOR YOU',
+    readTime: '5 min read',
+    iconName: 'Home',
+    citation: 'Tenancy Law s.13-16 / Constitution s.37',
+    content: [
+      'Under Nigerian tenancy laws, a landlord cannot forcefully eject a tenant without serving valid legal notices.',
+      'For a yearly tenancy, a tenant is legally entitled to a 6-month Notice to Quit.'
+    ]
+  },
+  {
+    id: 'emp-severance',
+    interestId: 'employment',
+    category: 'Employment Law',
+    title: 'Understanding Severance & Termination',
+    subtitle: 'Know your rights regarding wrongful termination and statutory redundancy benefits.',
+    badge: 'TAILORED FOR YOU',
+    readTime: '3 min read',
+    iconName: 'Briefcase',
+    citation: 'Labour Act Cap L1 s.11',
+    content: [
+      'Employers must provide written notice or payment in lieu of notice prior to termination.'
+    ]
+  },
+  {
+    id: 'consumer-sub',
+    interestId: 'consumer',
+    category: 'Consumer Protection',
+    title: 'Digital Subscriptions & Refunds',
+    subtitle: 'Fair transaction laws and protection against unauthorized billing.',
+    badge: 'TAILORED FOR YOU',
+    readTime: '2 min read',
+    iconName: 'ShoppingBag',
+    citation: 'FCCPA 2018 s.120',
+    content: [
+      'The Federal Competition and Consumer Protection Act guarantees clear disclosure of refund rights.'
+    ]
+  },
+  {
+    id: 's33',
+    interestId: 'civil',
+    category: 'Fundamental Civil Rights',
+    title: 'Right to Life & Dignity',
+    subtitle: 'Understanding constitutional protections for personal life, dignity, and fair hearing.',
+    badge: 'TAILORED FOR YOU',
+    readTime: '4 min read',
+    iconName: 'Scale',
+    citation: 'Constitution 1999 Chapter IV',
+    content: [
+      'Every person has a constitutional right to life and dignity under Chapter IV.'
+    ]
+  }
+];
 
 const renderGuideIcon = (iconName?: string, size = 24, color = Colors.primary) => {
   switch (iconName) {
@@ -42,9 +117,18 @@ const renderGuideIcon = (iconName?: string, size = 24, color = Colors.primary) =
       return <ShoppingBag size={size} color={color} />;
     case 'Shield':
       return <Shield size={size} color={color} />;
+    case 'Scale':
+      return <Scale size={size} color={color} />;
     default:
       return <FileText size={size} color={color} />;
   }
+};
+
+const getTimeOfDayGreeting = (): string => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'GOOD MORNING';
+  if (hour < 17) return 'GOOD AFTERNOON';
+  return 'GOOD EVENING';
 };
 
 export default function HomeScreen() {
@@ -63,9 +147,34 @@ export default function HomeScreen() {
   }, []);
 
   const loadProfile = async () => {
-    const p = await getStoredProfile();
+    const p = await updateDailyStreak();
     setProfile(p);
   };
+
+  // Dynamically select Featured Guide & Recent Guides based on user onboarding interests
+  const { featuredGuide, recentGuides } = React.useMemo(() => {
+    const userInterests = profile.interests || [];
+    const primaryInterest = userInterests[0];
+
+    const match = ALL_GUIDE_CANDIDATES.find((g) => g.interestId === primaryInterest);
+    const featured: GuideItem = match || DEFAULT_FEATURED_GUIDE;
+
+    // Remaining guides ordered by interests
+    const remaining = ALL_GUIDE_CANDIDATES.filter((g) => g.id !== featured.id);
+    remaining.sort((a, b) => {
+      const idxA = userInterests.indexOf(a.interestId);
+      const idxB = userInterests.indexOf(b.interestId);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return 0;
+    });
+
+    return {
+      featuredGuide: featured,
+      recentGuides: remaining.length > 0 ? remaining : DEFAULT_RECENT_GUIDES,
+    };
+  }, [profile.interests]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,7 +186,7 @@ export default function HomeScreen() {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerGreeting}>
-              GOOD MORNING, {(profile.name || 'ALEX').toUpperCase()}
+              {getTimeOfDayGreeting()}, {(profile.name || 'ALEX').toUpperCase()}
             </Text>
             <Text style={styles.headerTitle}>Ready to explore?</Text>
           </View>
@@ -106,31 +215,31 @@ export default function HomeScreen() {
           <View style={styles.heroHeaderRow}>
             <View style={styles.newGuideBadge}>
               <Text style={styles.newGuideBadgeText}>
-                {FEATURED_GUIDE.badge || 'FEATURED GUIDE'}
+                {featuredGuide.badge || 'RECOMMENDED FOR YOU'}
               </Text>
             </View>
-            {FEATURED_GUIDE.readTime && (
+            {featuredGuide.readTime && (
               <View style={styles.readTimeBadge}>
                 <Clock size={10} color={Colors.primary} style={{ marginRight: 4 }} />
-                <Text style={styles.readTimeText}>{FEATURED_GUIDE.readTime}</Text>
+                <Text style={styles.readTimeText}>{featuredGuide.readTime}</Text>
               </View>
             )}
           </View>
 
           <View style={styles.heroContentRow}>
             <View style={{ flex: 1, paddingRight: Spacing.sm }}>
-              <Text style={styles.heroTitle}>{FEATURED_GUIDE.title}</Text>
-              <Text style={styles.heroSubtitle}>{FEATURED_GUIDE.subtitle}</Text>
+              <Text style={styles.heroTitle}>{featuredGuide.title}</Text>
+              <Text style={styles.heroSubtitle}>{featuredGuide.subtitle}</Text>
             </View>
             <View style={styles.heroIconCircle}>
-              {renderGuideIcon(FEATURED_GUIDE.iconName, 26, Colors.primary)}
+              {renderGuideIcon(featuredGuide.iconName, 26, Colors.primary)}
             </View>
           </View>
 
           <TouchableOpacity
             style={styles.heroButton}
             activeOpacity={0.85}
-            onPress={() => router.push(`/guide/${FEATURED_GUIDE.id}` as any)}
+            onPress={() => router.push(`/guide/${featuredGuide.id}` as any)}
           >
             <Text style={styles.heroButtonText}>Start Reading</Text>
             <ArrowRight size={18} color={Colors.white} />
@@ -139,7 +248,7 @@ export default function HomeScreen() {
 
         {/* RECENT GUIDES CAROUSEL */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Guides</Text>
+          <Text style={styles.sectionTitle}>Recommended For You</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/library' as any)}>
             <View style={styles.viewLibraryLink}>
               <Text style={styles.viewLibraryText}>View Library</Text>
@@ -153,7 +262,7 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.carouselContainer}
         >
-          {RECENT_GUIDES.map((guide) => (
+          {recentGuides.map((guide) => (
             <TouchableOpacity
               key={guide.id}
               style={styles.guideCard}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,9 +10,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   Clock,
   Shield,
@@ -22,9 +23,15 @@ import {
   Scale,
   Check,
   ArrowRight,
+  AlertCircle,
 } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius, Shadows } from '../constants/theme';
-import { saveStoredProfile } from '../services/offlineStorage';
+import {
+  checkOnboardingStatus,
+  saveDraftProgress,
+  completeOnboarding,
+  clearDraftProgress,
+} from '../services/onboardingService';
 
 const { width } = Dimensions.get('window');
 
@@ -40,32 +47,114 @@ const TIME_OPTIONS = ['07:00 AM', '08:00 AM', '09:00 AM', '07:00 PM'];
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const [step, setStep] = useState(0); // 0: Welcome, 1: Name & Phone, 2: Notification Time, 3: Interests
+  const params = useLocalSearchParams<{ reOnboard?: string }>();
+  const isReOnboarding = params.reOnboard === 'true';
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Step state: 0: Welcome, 1: Name & Phone, 2: Notification Time, 3: Priority Rights, 4: Disclaimer & Consent
+  const [step, setStep] = useState(0);
 
   // Form State
-  const [name, setName] = useState('Alex');
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [preferredTime, setPreferredTime] = useState('08:00 AM');
   const [selectedDomains, setSelectedDomains] = useState<string[]>(['police', 'tenancy']);
+  const [consentChecked, setConsentChecked] = useState(false);
+
+  const isStep1Valid = name.trim().length > 0 && phone.trim().length >= 11;
+
+  // Resume mid-onboarding progress or handle explicit re-onboarding
+  useEffect(() => {
+    async function initOnboarding() {
+      try {
+        if (isReOnboarding) {
+          await clearDraftProgress();
+          setStep(0);
+          setIsLoading(false);
+          return;
+        }
+
+        const status = await checkOnboardingStatus();
+        if (status.onboarded) {
+          router.replace('/(tabs)' as any);
+          return;
+        }
+
+        if (status.draft && status.draft.step > 0) {
+          setStep(status.draft.step);
+          if (status.draft.name) setName(status.draft.name);
+          if (status.draft.phone !== undefined) setPhone(status.draft.phone);
+          if (status.draft.preferredTime) setPreferredTime(status.draft.preferredTime);
+          if (status.draft.selectedDomains) setSelectedDomains(status.draft.selectedDomains);
+          if (status.draft.consentChecked !== undefined) setConsentChecked(status.draft.consentChecked);
+        }
+      } catch (err) {
+        console.error('Error checking onboarding status:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    initOnboarding();
+  }, [router, isReOnboarding]);
+
+  const goToStep = (nextStep: number) => {
+    setStep(nextStep);
+    saveDraftProgress({
+      step: nextStep,
+      name,
+      phone,
+      preferredTime,
+      selectedDomains,
+      consentChecked,
+    });
+  };
 
   const toggleDomain = (id: string) => {
+    let updated: string[];
     if (selectedDomains.includes(id)) {
-      setSelectedDomains(selectedDomains.filter((d) => d !== id));
+      updated = selectedDomains.filter((d) => d !== id);
     } else {
-      setSelectedDomains([...selectedDomains, id]);
+      updated = [...selectedDomains, id];
     }
+    setSelectedDomains(updated);
+    saveDraftProgress({
+      step,
+      name,
+      phone,
+      preferredTime,
+      selectedDomains: updated,
+      consentChecked,
+    });
   };
 
   const handleFinish = async () => {
-    await saveStoredProfile({
-      name: name.trim() || 'Alex',
-      phoneNumber: phone.trim(),
+    if (!consentChecked || isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    await completeOnboarding({
+      step: 4,
+      name,
+      phone,
       preferredTime,
-      interests: selectedDomains,
-      onboarded: true,
+      selectedDomains,
+      consentChecked: true,
     });
-    router.replace('/(tabs)');
+
+    setIsSubmitting(false);
+    router.replace('/(tabs)' as any);
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -73,17 +162,17 @@ export default function OnboardingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        {/* Progress Bar Header */}
+        {/* Progress Bar Header (5 Steps Total) */}
         <View style={styles.progressHeader}>
           <View style={styles.progressBarTrack}>
             <View
               style={[
                 styles.progressBarFill,
-                { width: `${((step + 1) / 4) * 100}%` },
+                { width: `${((step + 1) / 5) * 100}%` },
               ]}
             />
           </View>
-          <Text style={styles.stepCounter}>Step {step + 1} of 4</Text>
+          <Text style={styles.stepCounter}>Step {step + 1} of 5</Text>
         </View>
 
         <ScrollView
@@ -120,7 +209,7 @@ export default function OnboardingScreen() {
               <TouchableOpacity
                 style={styles.primaryButton}
                 activeOpacity={0.8}
-                onPress={() => setStep(1)}
+                onPress={() => goToStep(1)}
               >
                 <Text style={styles.primaryButtonText}>Get Started →</Text>
               </TouchableOpacity>
@@ -132,34 +221,54 @@ export default function OnboardingScreen() {
             <View style={styles.stepContainer}>
               <Text style={styles.stepTitle}>What should we call you?</Text>
               <Text style={styles.stepSubtitle}>
-                This helps us personalize your daily compass experience.
+                This helps us personalize your daily compass experience and account details.
               </Text>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Your Name</Text>
+                <Text style={styles.inputLabel}>Your Name (Required)</Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Enter your name"
+                  placeholder="Enter your full name"
                   placeholderTextColor={Colors.textMuted}
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={(val) => {
+                    setName(val);
+                    saveDraftProgress({
+                      step: 1,
+                      name: val,
+                      phone,
+                      preferredTime,
+                      selectedDomains,
+                      consentChecked,
+                    });
+                  }}
                   autoCapitalize="words"
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
-                  WhatsApp Phone Number (Optional)
+                  WhatsApp Phone Number (Required)
                 </Text>
                 <Text style={styles.inputHint}>
-                  Allows you to seamlessly receive daily lessons via WhatsApp in future updates.
+                  Used to deliver daily legal rights lessons and verify your account.
                 </Text>
                 <TextInput
                   style={styles.textInput}
                   placeholder="e.g. +234 801 234 5678"
                   placeholderTextColor={Colors.textMuted}
                   value={phone}
-                  onChangeText={setPhone}
+                  onChangeText={(val) => {
+                    setPhone(val);
+                    saveDraftProgress({
+                      step: 1,
+                      name,
+                      phone: val,
+                      preferredTime,
+                      selectedDomains,
+                      consentChecked,
+                    });
+                  }}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -167,14 +276,19 @@ export default function OnboardingScreen() {
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={styles.secondaryButton}
-                  onPress={() => setStep(0)}
+                  onPress={() => goToStep(0)}
                 >
                   <Text style={styles.secondaryButtonText}>Back</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.primaryButton, { flex: 1, marginLeft: 12 }]}
-                  onPress={() => setStep(2)}
+                  style={[
+                    styles.primaryButton,
+                    { flex: 1, marginLeft: 12 },
+                    !isStep1Valid && styles.disabledButton,
+                  ]}
+                  disabled={!isStep1Valid}
+                  onPress={() => goToStep(2)}
                 >
                   <Text style={styles.primaryButtonText}>Continue</Text>
                 </TouchableOpacity>
@@ -200,7 +314,17 @@ export default function OnboardingScreen() {
                         styles.timeOptionCard,
                         isSelected && styles.timeOptionSelected,
                       ]}
-                      onPress={() => setPreferredTime(timeOption)}
+                      onPress={() => {
+                        setPreferredTime(timeOption);
+                        saveDraftProgress({
+                          step: 2,
+                          name,
+                          phone,
+                          preferredTime: timeOption,
+                          selectedDomains,
+                          consentChecked,
+                        });
+                      }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Clock
@@ -226,14 +350,14 @@ export default function OnboardingScreen() {
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={styles.secondaryButton}
-                  onPress={() => setStep(1)}
+                  onPress={() => goToStep(1)}
                 >
                   <Text style={styles.secondaryButtonText}>Back</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[styles.primaryButton, { flex: 1, marginLeft: 12 }]}
-                  onPress={() => setStep(3)}
+                  onPress={() => goToStep(3)}
                 >
                   <Text style={styles.primaryButtonText}>Next Step</Text>
                 </TouchableOpacity>
@@ -294,19 +418,115 @@ export default function OnboardingScreen() {
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={styles.secondaryButton}
-                  onPress={() => setStep(2)}
+                  onPress={() => goToStep(2)}
                 >
                   <Text style={styles.secondaryButtonText}>Back</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[styles.primaryButton, { flex: 1, marginLeft: 12 }]}
-                  onPress={handleFinish}
+                  onPress={() => goToStep(4)}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={styles.primaryButtonText}>Enter App</Text>
-                    <ArrowRight size={18} color={Colors.white} style={{ marginLeft: 6 }} />
-                  </View>
+                  <Text style={styles.primaryButtonText}>Continue to Disclaimer</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* STEP 4: LEGAL DISCLAIMER & CONSENT SCREEN */}
+          {step === 4 && (
+            <View style={styles.stepContainer}>
+              <Text style={styles.stepTitle}>Disclaimer</Text>
+              <Text style={styles.stepSubtitle}>Important Notice</Text>
+
+              {/* Exact Unaltered Legal Disclaimer Copy Box */}
+              <View style={styles.disclaimerBox}>
+                <View style={styles.disclaimerHeaderRow}>
+                  <AlertCircle size={18} color={Colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.disclaimerBoxTitle}>Important Notice</Text>
+                </View>
+
+                <Text style={styles.disclaimerParagraph}>
+                  This application provides general legal information and educational guidance based on the legal sources and materials available within the application. It is designed to help users better understand their rights and legal information in Nigeria.
+                </Text>
+
+                <Text style={styles.disclaimerParagraph}>
+                  The information provided by this application does not constitute legal advice and does not create a lawyer-client relationship. AI-generated responses may contain errors or may not fully reflect the circumstances of a particular situation.
+                </Text>
+
+                <Text style={styles.disclaimerParagraph}>
+                  Laws, legal procedures, and their interpretation may change over time. For matters requiring legal advice, representation, or a decision with significant legal consequences, users should consult a qualified legal professional.
+                </Text>
+
+                <Text style={styles.disclaimerParagraph}>
+                  By continuing to use the legal guidance features of this application, you acknowledge that you have read and understood this notice.
+                </Text>
+              </View>
+
+              {/* Checkbox Line */}
+              <TouchableOpacity
+                style={styles.consentCheckboxRow}
+                activeOpacity={0.8}
+                onPress={() => {
+                  const newChecked = !consentChecked;
+                  setConsentChecked(newChecked);
+                  saveDraftProgress({
+                    step: 4,
+                    name,
+                    phone,
+                    preferredTime,
+                    selectedDomains,
+                    consentChecked: newChecked,
+                  });
+                }}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    consentChecked && styles.checkboxSelected,
+                    { marginTop: 2, marginRight: 10 },
+                  ]}
+                >
+                  {consentChecked && <Check size={14} color={Colors.white} />}
+                </View>
+                <Text style={styles.consentCheckboxLabel}>
+                  I have read and understood the disclaimer and agree to continue.
+                </Text>
+              </TouchableOpacity>
+
+              {/* Privacy Consent Footnote */}
+              <Text style={styles.privacyFootnoteText}>
+                Continuing also means you consent to your provided information being processed to operate this service, as described in our Privacy Policy.
+              </Text>
+
+              {/* Navigation Action Row */}
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  disabled={isSubmitting}
+                  onPress={() => goToStep(3)}
+                >
+                  <Text style={styles.secondaryButtonText}>Back</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    { flex: 1, marginLeft: 12 },
+                    (!consentChecked || isSubmitting) && styles.disabledButton,
+                  ]}
+                  disabled={!consentChecked || isSubmitting}
+                  onPress={handleFinish}
+                  activeOpacity={0.8}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={styles.primaryButtonText}>Enter App</Text>
+                      <ArrowRight size={18} color={Colors.white} style={{ marginLeft: 6 }} />
+                    </View>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -321,6 +541,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   progressHeader: {
     paddingHorizontal: Spacing.lg,
@@ -479,11 +705,6 @@ const styles = StyleSheet.create({
   timeOptionTextSelected: {
     color: Colors.primary,
   },
-  checkmark: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
   domainCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -498,10 +719,6 @@ const styles = StyleSheet.create({
   domainCardSelected: {
     borderColor: Colors.primary,
     backgroundColor: Colors.accentLight,
-  },
-  domainIcon: {
-    fontSize: 22,
-    marginRight: Spacing.md,
   },
   domainLabel: {
     flex: 1,
@@ -525,10 +742,57 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  checkboxCheck: {
-    color: Colors.white,
-    fontSize: 12,
+  disclaimerBox: {
+    backgroundColor: Colors.cardWhite,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    ...Shadows.sm,
+  },
+  disclaimerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+    paddingBottom: Spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  disclaimerBoxTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Colors.primary,
+  },
+  disclaimerParagraph: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  consentCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.accentLight,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  consentCheckboxLabel: {
+    flex: 1,
+    fontSize: 14,
     fontWeight: '700',
+    color: Colors.text,
+    lineHeight: 20,
+  },
+  privacyFootnoteText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.xs,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -542,6 +806,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.md,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   primaryButtonText: {
     color: Colors.white,
