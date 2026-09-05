@@ -9,9 +9,24 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, XCircle, BookOpen, Shield, Home, Briefcase, Scale, Landmark, Gavel, FileText } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import {
+  Search,
+  XCircle,
+  BookOpen,
+  Shield,
+  Home,
+  Briefcase,
+  Scale,
+  Landmark,
+  Gavel,
+  FileText,
+  Sun,
+  Moon,
+} from 'lucide-react-native';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
+import { EmptyState } from '../../components/EmptyState';
 
 const CATEGORY_FILTERS = [
   { id: 'all', label: 'All (320+)' },
@@ -24,24 +39,24 @@ const CATEGORY_FILTERS = [
   { id: 'employment', label: 'Employment' },
 ];
 
-const getCategoryIcon = (category: string) => {
+const getCategoryIcon = (category: string, primaryColor: string) => {
   switch (category) {
     case 'police':
-      return <Shield size={18} color={Colors.primary} />;
+      return <Shield size={18} color={primaryColor} />;
     case 'tenancy':
-      return <Home size={18} color={Colors.primary} />;
+      return <Home size={18} color={primaryColor} />;
     case 'employment':
-      return <Briefcase size={18} color={Colors.primary} />;
+      return <Briefcase size={18} color={primaryColor} />;
     case 'civil':
-      return <Scale size={18} color={Colors.primary} />;
+      return <Scale size={18} color={primaryColor} />;
     case 'legislature':
-      return <Landmark size={18} color={Colors.primary} />;
+      return <Landmark size={18} color={primaryColor} />;
     case 'executive':
-      return <FileText size={18} color={Colors.primary} />;
+      return <FileText size={18} color={primaryColor} />;
     case 'judicature':
-      return <Gavel size={18} color={Colors.primary} />;
+      return <Gavel size={18} color={primaryColor} />;
     default:
-      return <BookOpen size={18} color={Colors.primary} />;
+      return <BookOpen size={18} color={primaryColor} />;
   }
 };
 
@@ -49,6 +64,7 @@ const INITIAL_LIMIT = 30;
 
 export default function LibraryScreen() {
   const router = useRouter();
+  const { colors, isDark, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [displayLimit, setDisplayLimit] = useState(INITIAL_LIMIT);
@@ -62,14 +78,23 @@ export default function LibraryScreen() {
       if (!matchesCategory) return false;
       if (!q) return true;
 
-      const secNumMatch = item.sectionNumber ? String(item.sectionNumber) === q || `section ${item.sectionNumber}`.includes(q) : false;
+      const secNumMatch = item.sectionNumber
+        ? String(item.sectionNumber) === q || `section ${item.sectionNumber}`.includes(q)
+        : false;
       const titleMatch = item.title.toLowerCase().includes(q);
       const sectionStrMatch = item.section.toLowerCase().includes(q);
       const chapterMatch = item.chapter.toLowerCase().includes(q);
       const summaryMatch = item.plainLanguageSummary.toLowerCase().includes(q);
       const verbatimMatch = item.verbatimText.toLowerCase().includes(q);
 
-      return secNumMatch || titleMatch || sectionStrMatch || chapterMatch || summaryMatch || verbatimMatch;
+      return (
+        secNumMatch ||
+        titleMatch ||
+        sectionStrMatch ||
+        chapterMatch ||
+        summaryMatch ||
+        verbatimMatch
+      );
     });
   }, [searchQuery, activeCategory]);
 
@@ -78,20 +103,51 @@ export default function LibraryScreen() {
   }, [filteredSections, displayLimit]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.pageTitle}>Legal Rights Library</Text>
-        <Text style={styles.pageSubtitle}>
-          Full 1999 Constitution of Nigeria (320 Sections) & fundamental statutory laws — 100% offline.
-        </Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.background, borderBottomColor: colors.border },
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <View style={{ flex: 1, marginRight: Spacing.sm }}>
+            <Text style={[styles.pageTitle, { color: colors.text }]}>
+              Legal Rights Library
+            </Text>
+            <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>
+              Full 1999 Constitution of Nigeria (320 Sections) & fundamental statutory laws — 100% offline.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.themeToggleBtn,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            ]}
+            onPress={toggleTheme}
+            activeOpacity={0.8}
+            accessibilityLabel="Toggle Theme"
+          >
+            {isDark ? (
+              <Sun size={17} color={colors.text} />
+            ) : (
+              <Moon size={17} color={colors.text} />
+            )}
+          </TouchableOpacity>
+        </View>
 
         {/* SEARCH BAR */}
-        <View style={styles.searchBox}>
-          <Search size={18} color={Colors.textMuted} />
+        <View
+          style={[
+            styles.searchBox,
+            { backgroundColor: colors.cardWhite, borderColor: colors.border },
+          ]}
+        >
+          <Search size={18} color={colors.textMuted} />
           <TextInput
-            style={styles.searchInput}
-            placeholder="Search rights or sections (e.g. 33, life, arrest, recall)..."
-            placeholderTextColor={Colors.textMuted}
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search rights or sections (e.g. 33, life, arrest)..."
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={(txt) => {
               setSearchQuery(txt);
@@ -99,8 +155,13 @@ export default function LibraryScreen() {
             }}
           />
           {searchQuery !== '' && (
-            <TouchableOpacity onPress={() => { setSearchQuery(''); setDisplayLimit(INITIAL_LIMIT); }}>
-              <XCircle size={18} color={Colors.textMuted} />
+            <TouchableOpacity
+              onPress={() => {
+                setSearchQuery('');
+                setDisplayLimit(INITIAL_LIMIT);
+              }}
+            >
+              <XCircle size={18} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -118,7 +179,10 @@ export default function LibraryScreen() {
                 key={cat.id}
                 style={[
                   styles.filterChip,
-                  isActive && styles.filterChipActive,
+                  {
+                    backgroundColor: isActive ? colors.primary : colors.cardBackground,
+                    borderColor: isActive ? colors.primary : colors.border,
+                  },
                 ]}
                 onPress={() => {
                   setActiveCategory(cat.id);
@@ -128,7 +192,10 @@ export default function LibraryScreen() {
                 <Text
                   style={[
                     styles.filterChipText,
-                    isActive && styles.filterChipTextActive,
+                    {
+                      color: isActive ? '#FFFFFF' : colors.textMuted,
+                      fontWeight: isActive ? '700' : '600',
+                    },
                   ]}
                 >
                   {cat.label}
@@ -143,37 +210,64 @@ export default function LibraryScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.resultCountText}>
+        <Text style={[styles.resultCountText, { color: colors.textMuted }]}>
           Showing {visibleSections.length} of {filteredSections.length} provisions
         </Text>
 
         {visibleSections.map((item) => (
           <TouchableOpacity
             key={item.id}
-            style={styles.rightCard}
+            style={[
+              styles.rightCard,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            ]}
             activeOpacity={0.8}
             onPress={() => router.push(`/guide/${item.id}` as any)}
           >
             <View style={styles.cardHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <View style={styles.categoryIconCircle}>
-                  {getCategoryIcon(item.category)}
+                <View
+                  style={[
+                    styles.categoryIconCircle,
+                    { backgroundColor: colors.accentLight, borderColor: colors.border },
+                  ]}
+                >
+                  {getCategoryIcon(item.category, colors.primary)}
                 </View>
-                <View style={styles.sectionBadge}>
-                  <Text style={styles.sectionBadgeText}>{item.section}</Text>
+                <View
+                  style={[
+                    styles.sectionBadge,
+                    { backgroundColor: colors.accentLight },
+                  ]}
+                >
+                  <Text style={[styles.sectionBadgeText, { color: colors.primary }]}>
+                    {item.section}
+                  </Text>
                 </View>
               </View>
-              <Text style={styles.chapterText} numberOfLines={1}>
+              <Text style={[styles.chapterText, { color: colors.textMuted }]} numberOfLines={1}>
                 {item.chapter.split(':')[0]}
               </Text>
             </View>
 
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.summaryText}>{item.plainLanguageSummary}</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
+            <Text style={[styles.summaryText, { color: colors.text }]}>
+              {item.plainLanguageSummary}
+            </Text>
 
-            <View style={styles.verbatimPreviewBox}>
-              <Text style={styles.verbatimLabel}>CONSTITUTIONAL TEXT EXCERPT:</Text>
-              <Text style={styles.verbatimText} numberOfLines={3}>
+            <View
+              style={[
+                styles.verbatimPreviewBox,
+                { backgroundColor: colors.cardWhite, borderLeftColor: colors.primary },
+              ]}
+            >
+              <Text style={[styles.verbatimLabel, { color: colors.primary }]}>
+                CONSTITUTIONAL TEXT EXCERPT:
+              </Text>
+              <Text
+                style={[styles.verbatimText, { color: colors.textMuted }]}
+                numberOfLines={3}
+              >
                 {`"${item.verbatimText}"`}
               </Text>
             </View>
@@ -182,23 +276,29 @@ export default function LibraryScreen() {
 
         {visibleSections.length < filteredSections.length && (
           <TouchableOpacity
-            style={styles.loadMoreBtn}
+            style={[
+              styles.loadMoreBtn,
+              { backgroundColor: colors.cardWhite, borderColor: colors.primary },
+            ]}
             onPress={() => setDisplayLimit((prev) => prev + 40)}
           >
-            <Text style={styles.loadMoreBtnText}>
+            <Text style={[styles.loadMoreBtnText, { color: colors.primary }]}>
               Load More Sections ({filteredSections.length - visibleSections.length} remaining) ↓
             </Text>
           </TouchableOpacity>
         )}
 
         {filteredSections.length === 0 && (
-          <View style={styles.emptyBox}>
-            <BookOpen size={40} color={Colors.textMuted} />
-            <Text style={styles.emptyTitle}>No matching constitutional provisions found</Text>
-            <Text style={styles.emptySub}>
-              Try searching by section number (e.g. &quot;33&quot;, &quot;68&quot;) or keyword (&quot;life&quot;, &quot;governor&quot;, &quot;court&quot;).
-            </Text>
-          </View>
+          <EmptyState
+            icon="search"
+            title="No Matching Provisions Found"
+            description="Try searching by section number (e.g. '33', '68') or keyword ('life', 'governor', 'court')."
+            actionLabel="Reset Search & Filters"
+            onAction={() => {
+              setSearchQuery('');
+              setActiveCategory('all');
+            }}
+          />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -208,86 +308,80 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
-    backgroundColor: Colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xs,
+  },
+  themeToggleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   pageTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: Colors.text,
   },
   pageSubtitle: {
     fontSize: 12,
     lineHeight: 16,
-    color: Colors.textMuted,
     marginTop: 2,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardWhite,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderWidth: 1.5,
-    borderColor: Colors.border,
     marginBottom: Spacing.sm,
     ...Shadows.sm,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.text,
     marginLeft: Spacing.xs,
   },
   filterScroll: {
     paddingRight: Spacing.md,
+    paddingVertical: 2,
   },
   filterChip: {
-    backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.pill,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
     marginRight: Spacing.xs,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
   },
   filterChipText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textMuted,
-  },
-  filterChipTextActive: {
-    color: Colors.white,
   },
   listContent: {
     padding: Spacing.md,
+    paddingBottom: 100, // accommodate bottom tab bar
   },
   resultCountText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.textMuted,
     marginBottom: Spacing.sm,
   },
   rightCard: {
-    backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
     ...Shadows.sm,
   },
   cardHeaderRow: {
@@ -300,15 +394,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.xs,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   sectionBadge: {
-    backgroundColor: Colors.accentLight,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
@@ -316,73 +407,45 @@ const styles = StyleSheet.create({
   sectionBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: Colors.primary,
   },
   chapterText: {
     fontSize: 11,
     fontWeight: '600',
-    color: Colors.textMuted,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.text,
     marginBottom: Spacing.xs,
   },
   summaryText: {
     fontSize: 13,
     lineHeight: 19,
-    color: Colors.text,
     marginBottom: Spacing.sm,
   },
   verbatimPreviewBox: {
-    backgroundColor: Colors.cardWhite,
     borderRadius: BorderRadius.sm,
     padding: Spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.primary,
   },
   verbatimLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: Colors.primary,
     marginBottom: 2,
   },
   verbatimText: {
     fontSize: 12,
     lineHeight: 17,
     fontStyle: 'italic',
-    color: Colors.textMuted,
   },
   loadMoreBtn: {
-    backgroundColor: Colors.cardWhite,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginVertical: Spacing.sm,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
   },
   loadMoreBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.primary,
-  },
-  emptyBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.xxl,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    marginTop: Spacing.sm,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    marginTop: 2,
-    textAlign: 'center',
   },
 });

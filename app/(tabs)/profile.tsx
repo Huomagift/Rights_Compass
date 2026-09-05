@@ -7,15 +7,33 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Clock, Bell, CheckCircle2, Trash2, ChevronRight, Flame, LogOut } from 'lucide-react-native';
+import {
+  Clock,
+  Bell,
+  CheckCircle2,
+  Trash2,
+  ChevronRight,
+  Flame,
+  LogOut,
+  Sun,
+  Moon,
+} from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
-import { resetStoredProfile, resetStreakToDayOne, updateDailyStreak, UserProfile } from '../../services/offlineStorage';
+import { useTheme } from '../../context/ThemeContext';
+import {
+  resetStoredProfile,
+  resetStreakToDayOne,
+  updateDailyStreak,
+  UserProfile,
+} from '../../services/offlineStorage';
 import { signOutUser } from '../../services/authService';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { colors, isDark, toggleTheme } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
@@ -72,11 +90,11 @@ export default function ProfileScreen() {
   if (!profile) return null;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.pageTitle}>Account & Settings</Text>
-        <Text style={styles.pageSubtitle}>
-          Manage your daily rights habit preferences and privacy controls.
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <Text style={[styles.pageTitle, { color: colors.text }]}>Account & Settings</Text>
+        <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>
+          Manage your daily rights habit preferences, theme, and privacy controls.
         </Text>
       </View>
 
@@ -85,86 +103,120 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* USER CARD */}
-        <View style={styles.userCard}>
-          <View style={styles.avatarBig}>
+        <View style={[styles.userCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <View style={[styles.avatarBig, { backgroundColor: colors.primaryDark }]}>
             <Text style={styles.avatarLetter}>
               {profile.name ? profile.name[0].toUpperCase() : 'A'}
             </Text>
           </View>
 
           <View style={{ flex: 1, marginLeft: Spacing.md }}>
-            <Text style={styles.userName}>{profile.name}</Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{profile.name}</Text>
             {profile.phoneNumber ? (
-              <Text style={styles.userPhone}>{profile.phoneNumber}</Text>
+              <Text style={[styles.userPhone, { color: colors.textMuted }]}>{profile.phoneNumber}</Text>
             ) : (
-              <Text style={styles.userPhone}>WhatsApp Not Linked</Text>
+              <Text style={[styles.userPhone, { color: colors.textMuted }]}>WhatsApp Not Linked</Text>
             )}
-            <View style={styles.streakRow}>
-              <Flame size={12} color={Colors.streakBadgeText} style={{ marginRight: 4 }} />
-              <Text style={styles.streakBadgeText}>{profile.streakCount} Day Streak Active</Text>
+            <View style={[styles.streakRow, { backgroundColor: colors.streakBadgeBg }]}>
+              <Flame size={12} color={colors.streakBadgeText} style={{ marginRight: 4 }} />
+              <Text style={[styles.streakBadgeText, { color: colors.streakBadgeText }]}>
+                {profile.streakCount} Day Streak Active
+              </Text>
             </View>
           </View>
         </View>
 
-        {/* DAILY HABIT SETTINGS */}
-        <Text style={styles.sectionTitle}>Daily Habit Loop</Text>
-        <View style={styles.settingsGroup}>
-          <View style={styles.settingItem}>
-            <View style={styles.settingIconCircle}>
-              <Clock size={18} color={Colors.primary} />
+        {/* APPEARANCE & THEME SETTINGS */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
+        <View style={[styles.settingsGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+            <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
+              {isDark ? (
+                <Sun size={18} color={colors.primary} />
+              ) : (
+                <Moon size={18} color={colors.primary} />
+              )}
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={styles.settingTitle}>Daily Notification Time</Text>
-              <Text style={styles.settingSub}>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Dark Mode</Text>
+              <Text style={[styles.settingSub, { color: colors.textMuted }]}>
+                {isDark ? 'Dark theme is active' : 'Light theme is active'}
+              </Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+        </View>
+
+        {/* DAILY HABIT SETTINGS */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Habit Loop</Text>
+        <View style={[styles.settingsGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+            <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
+              <Clock size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Daily Notification Time</Text>
+              <Text style={[styles.settingSub, { color: colors.textMuted }]}>
                 Delivered 100% offline at {profile.preferredTime}
               </Text>
             </View>
             <TouchableOpacity style={styles.changeBtn}>
-              <Text style={styles.changeBtnText}>Edit</Text>
+              <Text style={[styles.changeBtnText, { color: colors.primary }]}>Edit</Text>
             </TouchableOpacity>
           </View>
 
           <View style={[styles.settingItem, { borderBottomWidth: 0 }]}>
-            <View style={styles.settingIconCircle}>
-              <Bell size={18} color={Colors.primary} />
+            <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
+              <Bell size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={styles.settingTitle}>Offline Mode & Supabase Sync</Text>
-              <Text style={styles.settingSub}>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Offline Mode & Supabase Sync</Text>
+              <Text style={[styles.settingSub, { color: colors.textMuted }]}>
                 {profile.syncedToSupabase
                   ? 'Profile synced with Supabase database'
                   : '1999 Constitution cached on device'}
               </Text>
             </View>
-            <CheckCircle2 size={20} color={Colors.success} />
+            <CheckCircle2 size={20} color={colors.success} />
           </View>
 
-          <TouchableOpacity style={styles.settingItem} onPress={handleResetStreak}>
-            <View style={styles.settingIconCircle}>
-              <Flame size={18} color={Colors.streakBadgeText} />
+          <TouchableOpacity
+            style={[styles.settingItem, { borderTopWidth: 1, borderTopColor: colors.border }]}
+            onPress={handleResetStreak}
+          >
+            <View style={[styles.settingIconCircle, { backgroundColor: colors.streakBadgeBg }]}>
+              <Flame size={18} color={colors.streakBadgeText} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={styles.settingTitle}>Reset Streak Counter</Text>
-              <Text style={styles.settingSub}>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Reset Streak Counter</Text>
+              <Text style={[styles.settingSub, { color: colors.textMuted }]}>
                 Reset daily streak to Day 1
               </Text>
             </View>
-            <Text style={styles.changeBtnText}>Reset</Text>
+            <Text style={[styles.changeBtnText, { color: colors.primary }]}>Reset</Text>
           </TouchableOpacity>
         </View>
 
         {/* ACCOUNT ACTIONS & PRIVACY */}
-        <Text style={styles.sectionTitle}>Account & Privacy (NDPR)</Text>
-        <View style={styles.settingsGroup}>
-          <TouchableOpacity style={styles.settingItem} onPress={handleLogOut}>
-            <View style={[styles.settingIconCircle, { backgroundColor: 'rgba(150, 62, 20, 0.12)' }]}>
-              <LogOut size={18} color={Colors.primary} />
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Account & Privacy (NDPR)</Text>
+        <View style={[styles.settingsGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.settingItem, { borderBottomColor: colors.border }]}
+            onPress={handleLogOut}
+          >
+            <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
+              <LogOut size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={styles.settingTitle}>Log Out</Text>
-              <Text style={styles.settingSub}>Ends session and returns to sign-up</Text>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Log Out</Text>
+              <Text style={[styles.settingSub, { color: colors.textMuted }]}>Ends session and returns to onboarding</Text>
             </View>
-            <ChevronRight size={16} color={Colors.textMuted} />
+            <ChevronRight size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]} onPress={handleResetData}>
@@ -175,11 +227,11 @@ export default function ProfileScreen() {
               <Text style={[styles.settingTitle, { color: '#DC2626' }]}>
                 Delete My Account & Data (NDPR)
               </Text>
-              <Text style={styles.settingSub}>
+              <Text style={[styles.settingSub, { color: colors.textMuted }]}>
                 Wipes local profile, streak, and remote record
               </Text>
             </View>
-            <ChevronRight size={16} color={Colors.textMuted} />
+            <ChevronRight size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -213,6 +265,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.md,
+    paddingBottom: 110,
   },
   userCard: {
     flexDirection: 'row',
@@ -220,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
     ...Shadows.sm,
@@ -234,12 +287,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarLetter: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.white,
   },
   userName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: Colors.text,
   },
@@ -247,16 +300,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textMuted,
     marginTop: 2,
-    marginBottom: Spacing.xs,
   },
   streakRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     backgroundColor: Colors.streakBadgeBg,
     borderRadius: BorderRadius.pill,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    marginTop: 6,
   },
   streakBadgeText: {
     fontSize: 11,
@@ -264,19 +317,19 @@ const styles = StyleSheet.create({
     color: Colors.streakBadgeText,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: Colors.text,
     marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   settingsGroup: {
     backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.xl,
     borderWidth: 1,
     borderColor: Colors.border,
+    marginBottom: Spacing.md,
     overflow: 'hidden',
-    ...Shadows.sm,
   },
   settingItem: {
     flexDirection: 'row',
@@ -286,9 +339,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   settingIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: Colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -301,7 +354,7 @@ const styles = StyleSheet.create({
   settingSub: {
     fontSize: 12,
     color: Colors.textMuted,
-    marginTop: 2,
+    marginTop: 1,
   },
   changeBtn: {
     paddingHorizontal: Spacing.sm,
@@ -309,15 +362,6 @@ const styles = StyleSheet.create({
   },
   changeBtnText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  reOnboardBtn: {
-    alignSelf: 'center',
-    paddingVertical: Spacing.md,
-  },
-  reOnboardBtnText: {
-    fontSize: 14,
     fontWeight: '700',
     color: Colors.primary,
   },
