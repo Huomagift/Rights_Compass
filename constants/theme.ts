@@ -18,6 +18,28 @@ export const Colors = {
   shadowColor: 'rgba(110, 60, 20, 0.08)',
 };
 
+export const DarkColors = {
+  background: '#0F0D0B',
+  cardBackground: '#1C1814',
+  cardWhite: '#241F1A',
+  primary: '#D4622A',      // slightly lighter for dark bg contrast
+  primaryDark: '#963E14',
+  accent: '#B84C1C',
+  accentLight: '#2E1E14',
+  text: '#F0EAE4',
+  textMuted: '#9E958E',
+  border: '#2E2620',
+  streakBadgeBg: '#2A1E14',
+  streakBadgeText: '#E8936A',
+  success: '#4ABA72',
+  warning: '#F59E0B',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  white: '#FFFFFF',
+  shadowColor: 'rgba(0, 0, 0, 0.3)',
+};
+
+export type ThemeColors = typeof Colors;
+
 export const Fonts = {
   regular: 'System',
   medium: 'System',
@@ -64,4 +86,3 @@ export const Shadows = {
     elevation: 8,
   },
 };
-

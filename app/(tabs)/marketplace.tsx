@@ -7,19 +7,45 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
-import { Lock, ShieldCheck, CheckCircle2, Bell, Scale, Sparkles } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Lock, ShieldCheck, CheckCircle2, Bell, Scale, Sparkles, Sun, Moon } from 'lucide-react-native';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function MarketplaceScreen() {
+  const { colors, isDark, toggleTheme } = useTheme();
   const [notified, setNotified] = useState(false);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.pageTitle}>Find Legal Aid</Text>
-        <Text style={styles.pageSubtitle}>
-          Connect with NBA-verified pro bono lawyers and accredited legal representation.
-        </Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.background, borderBottomColor: colors.border },
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <View style={{ flex: 1, marginRight: Spacing.sm }}>
+            <Text style={[styles.pageTitle, { color: colors.text }]}>Find Legal Aid</Text>
+            <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>
+              Connect with NBA-verified pro bono lawyers and accredited legal representation.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.themeToggleBtn,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            ]}
+            onPress={toggleTheme}
+            activeOpacity={0.8}
+            accessibilityLabel="Toggle Theme"
+          >
+            {isDark ? (
+              <Sun size={17} color={colors.text} />
+            ) : (
+              <Moon size={17} color={colors.text} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -27,52 +53,86 @@ export default function MarketplaceScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* COMING SOON LOCKED CARD */}
-        <View style={styles.comingSoonCard}>
-          <View style={styles.lockIconCircle}>
-            <Lock size={28} color={Colors.primary} />
+        <View
+          style={[
+            styles.comingSoonCard,
+            { backgroundColor: colors.cardBackground, borderColor: colors.border },
+          ]}
+        >
+          <View
+            style={[
+              styles.lockIconCircle,
+              { backgroundColor: colors.accentLight, borderColor: colors.border },
+            ]}
+          >
+            <Lock size={28} color={colors.primary} />
           </View>
 
-          <View style={styles.phaseBadge}>
-            <Text style={styles.phaseBadgeText}>PHASE 2 • COMING SOON</Text>
+          <View
+            style={[
+              styles.phaseBadge,
+              { backgroundColor: colors.streakBadgeBg },
+            ]}
+          >
+            <Text style={[styles.phaseBadgeText, { color: colors.primary }]}>
+              PHASE 2 • COMING SOON
+            </Text>
           </View>
 
-          <Text style={styles.cardTitle}>NBA Legal Aid Network</Text>
-          <Text style={styles.cardDescription}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>
+            NBA Legal Aid Network
+          </Text>
+          <Text style={[styles.cardDescription, { color: colors.textMuted }]}>
             We are currently verifying and onboarding accredited Nigerian Bar Association (NBA) legal practitioners and pro bono organizations. Direct lawyer matching and intake requests will launch in our next release.
           </Text>
 
           {/* TEASER FEATURE LIST */}
-          <View style={styles.teaserBox}>
+          <View
+            style={[
+              styles.teaserBox,
+              { backgroundColor: colors.cardWhite, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.teaserRow}>
-              <CheckCircle2 size={16} color={Colors.success} style={{ marginRight: 8 }} />
-              <Text style={styles.teaserText}>NBA Enrollment Database Verification</Text>
+              <CheckCircle2 size={16} color={colors.success} style={{ marginRight: 8 }} />
+              <Text style={[styles.teaserText, { color: colors.text }]}>
+                NBA Enrollment Database Verification
+              </Text>
             </View>
 
             <View style={styles.teaserRow}>
-              <ShieldCheck size={16} color={Colors.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.teaserText}>Pro Bono & Free Legal Representation</Text>
+              <ShieldCheck size={16} color={colors.primary} style={{ marginRight: 8 }} />
+              <Text style={[styles.teaserText, { color: colors.text }]}>
+                Pro Bono & Free Legal Representation
+              </Text>
             </View>
 
             <View style={styles.teaserRow}>
-              <Scale size={16} color={Colors.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.teaserText}>State & Specialty Case Intake Matching</Text>
+              <Scale size={16} color={colors.primary} style={{ marginRight: 8 }} />
+              <Text style={[styles.teaserText, { color: colors.text }]}>
+                State & Specialty Case Intake Matching
+              </Text>
             </View>
           </View>
 
           {/* WAITLIST / NOTIFY BUTTON */}
           <TouchableOpacity
-            style={[styles.notifyBtn, notified && styles.notifyBtnActive]}
+            style={[
+              styles.notifyBtn,
+              { backgroundColor: colors.accent },
+              notified && { backgroundColor: colors.success },
+            ]}
             activeOpacity={0.85}
             onPress={() => setNotified(!notified)}
           >
             {notified ? (
               <View style={styles.btnRow}>
-                <Sparkles size={18} color={Colors.white} style={{ marginRight: 6 }} />
+                <Sparkles size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
                 <Text style={styles.notifyBtnText}>You&apos;re on the Waitlist!</Text>
               </View>
             ) : (
               <View style={styles.btnRow}>
-                <Bell size={18} color={Colors.white} style={{ marginRight: 6 }} />
+                <Bell size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
                 <Text style={styles.notifyBtnText}>Notify Me When Live</Text>
               </View>
             )}
@@ -86,55 +146,60 @@ export default function MarketplaceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
-    backgroundColor: Colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xs,
+  },
+  themeToggleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   pageTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
   },
   pageSubtitle: {
     fontSize: 13,
     lineHeight: 18,
-    color: Colors.textMuted,
     marginTop: 2,
   },
   scrollContent: {
     padding: Spacing.lg,
     flexGrow: 1,
     justifyContent: 'center',
+    paddingBottom: 100, // tab bar clearance
   },
   comingSoonCard: {
-    backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
     ...Shadows.md,
   },
   lockIconCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
     ...Shadows.sm,
   },
   phaseBadge: {
-    backgroundColor: 'rgba(150, 62, 20, 0.12)',
     borderRadius: BorderRadius.pill,
     paddingHorizontal: Spacing.md,
     paddingVertical: 4,
@@ -143,31 +208,26 @@ const styles = StyleSheet.create({
   phaseBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: Colors.primary,
     letterSpacing: 0.8,
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: Colors.text,
     textAlign: 'center',
     marginBottom: Spacing.xs,
   },
   cardDescription: {
     fontSize: 14,
     lineHeight: 22,
-    color: Colors.textMuted,
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
   teaserBox: {
     width: '100%',
-    backgroundColor: Colors.cardWhite,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
     ...Shadows.sm,
   },
   teaserRow: {
@@ -178,19 +238,14 @@ const styles = StyleSheet.create({
   teaserText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.text,
   },
   notifyBtn: {
     width: '100%',
-    backgroundColor: Colors.accent,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.md,
-  },
-  notifyBtnActive: {
-    backgroundColor: Colors.success,
   },
   btnRow: {
     flexDirection: 'row',
@@ -200,6 +255,6 @@ const styles = StyleSheet.create({
   notifyBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.white,
+    color: '#FFFFFF',
   },
 });
