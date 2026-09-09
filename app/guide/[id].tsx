@@ -6,9 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Share2, Bookmark, Scale, CheckCircle2, Sun, Moon } from 'lucide-react-native';
+import { ArrowLeft, Share2, Bookmark, Scale, CheckCircle2, Sun, Moon, Sparkles, BookOpen } from 'lucide-react-native';
 import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { FEATURED_GUIDE, RECENT_GUIDES, CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
@@ -16,8 +17,11 @@ import { EmptyState } from '../../components/EmptyState';
 
 export default function GuideDetailScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { colors, isDark, toggleTheme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  const isWide = width > 768;
 
   // Find in guides or constitution sections
   const allGuides = [FEATURED_GUIDE, ...RECENT_GUIDES];
@@ -32,7 +36,7 @@ export default function GuideDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* HEADER */}
+      {/* MATERIAL 3 HEADER */}
       <View
         style={[
           styles.header,
@@ -40,7 +44,7 @@ export default function GuideDetailScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: colors.cardBackground }]}
+          style={[styles.backBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
           onPress={() => router.back()}
           accessibilityLabel="Go back"
         >
@@ -53,7 +57,7 @@ export default function GuideDetailScreen() {
 
         <View style={styles.headerRightActions}>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.cardBackground }]}
+            style={[styles.actionBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
             onPress={toggleTheme}
             accessibilityLabel="Toggle Theme"
           >
@@ -74,10 +78,14 @@ export default function GuideDetailScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWide && styles.wideScrollContent,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.categoryBadge, { backgroundColor: colors.accentLight }]}>
+          <Sparkles size={12} color={colors.primary} style={{ marginRight: 4 }} />
           <Text style={[styles.categoryBadgeText, { color: colors.primary }]}>{category}</Text>
         </View>
 
@@ -89,7 +97,7 @@ export default function GuideDetailScreen() {
             { backgroundColor: colors.cardBackground, borderColor: colors.border },
           ]}
         >
-          <Bookmark size={14} color={colors.primary} />
+          <Bookmark size={15} color={colors.primary} />
           <Text style={[styles.citationText, { color: colors.primary }]}>
             Legal Citation: {citation}
           </Text>
@@ -107,10 +115,10 @@ export default function GuideDetailScreen() {
             <View
               style={[
                 styles.summaryCard,
-                { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                { backgroundColor: colors.cardBackground, borderColor: colors.border },
               ]}
             >
-              <Text style={[styles.sectionHeaderLabel, { color: colors.textMuted }]}>
+              <Text style={[styles.sectionHeaderLabel, { color: colors.primary }]}>
                 PLAIN LANGUAGE SUMMARY
               </Text>
               <Text style={[styles.summaryBody, { color: colors.text }]}>
@@ -125,7 +133,7 @@ export default function GuideDetailScreen() {
                 { backgroundColor: colors.accentLight, borderLeftColor: colors.primary },
               ]}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                 <CheckCircle2 size={16} color={colors.primary} style={{ marginRight: 6 }} />
                 <Text style={[styles.takeawayTitle, { color: colors.primary }]}>KEY TAKEAWAY</Text>
               </View>
@@ -147,8 +155,8 @@ export default function GuideDetailScreen() {
                   VERBATIM CONSTITUTIONAL TEXT
                 </Text>
               </View>
-              <Text style={[styles.verbatimBody, { color: colors.text }]}>
-                {constSection.verbatimText}
+              <Text style={[styles.verbatimBody, { color: colors.textMuted }]}>
+                {`"${constSection.verbatimText}"`}
               </Text>
             </View>
           </>
@@ -176,8 +184,9 @@ export default function GuideDetailScreen() {
             Answer a quick 1-minute scenario quiz on this provision to earn knowledge points!
           </Text>
           <TouchableOpacity
-            style={[styles.startQuizBtn, { backgroundColor: colors.accent }]}
+            style={[styles.startQuizBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.push(`/quiz/${id || 'police-stops'}` as any)}
+            activeOpacity={0.85}
           >
             <Text style={styles.startQuizBtnText}>Take Scenario Quiz →</Text>
           </TouchableOpacity>
@@ -200,11 +209,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   headerTitle: {
     flex: 1,
@@ -219,20 +229,28 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   scrollContent: {
     padding: Spacing.lg,
     paddingBottom: 80,
   },
+  wideScrollContent: {
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
   categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.pill,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     marginBottom: Spacing.sm,
   },
@@ -241,21 +259,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   mainTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
+    letterSpacing: -0.5,
     marginBottom: Spacing.xs,
   },
   citationBox: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    marginBottom: Spacing.md,
+    padding: Spacing.sm + 2,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
     ...Shadows.sm,
   },
   citationText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     marginLeft: 6,
   },
@@ -265,42 +284,42 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   summaryCard: {
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderWidth: 1,
     ...Shadows.sm,
   },
   sectionHeaderLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginBottom: 6,
   },
   summaryBody: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 23,
     fontWeight: '600',
   },
   takeawayCard: {
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderLeftWidth: 4,
   },
   takeawayTitle: {
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   takeawayBody: {
     fontSize: 14,
     fontWeight: '700',
-    lineHeight: 20,
+    lineHeight: 21,
   },
   verbatimCard: {
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderWidth: 1,
     ...Shadows.sm,
@@ -308,33 +327,34 @@ const styles = StyleSheet.create({
   verbatimTitle: {
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   verbatimBody: {
     fontSize: 14,
     lineHeight: 22,
   },
   quizCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
     marginTop: Spacing.md,
     borderWidth: 1.5,
     ...Shadows.md,
   },
   quizCardTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
     marginBottom: 4,
   },
   quizCardSub: {
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 19,
     marginBottom: Spacing.md,
   },
   startQuizBtn: {
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.pill,
     paddingVertical: Spacing.md,
     alignItems: 'center',
+    ...Shadows.sm,
   },
   startQuizBtnText: {
     fontSize: 15,
