@@ -6,21 +6,38 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, CheckCircle2, AlertCircle, Flame, Sun, Moon } from 'lucide-react-native';
+import { X, CheckCircle2, AlertCircle, Flame, Sun, Moon, Sparkles } from 'lucide-react-native';
 import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
-import { SAMPLE_QUIZZES } from '../../data/mockData';
+import { SAMPLE_QUIZZES } from '../../data/constitutionStore';
 import { updateDailyStreak } from '../../services/offlineStorage';
 import { ErrorState } from '../../components/ErrorState';
 
 export default function QuizScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { colors, isDark, toggleTheme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const quiz = SAMPLE_QUIZZES[id || 'police-stops'];
+  const isWide = width > 768;
+
+  const searchId = id || 'police-stops';
+  const quiz = SAMPLE_QUIZZES[searchId] || {
+    id: `q_${searchId}`,
+    guideId: searchId,
+    scenario: `In a scenario involving ${searchId.startsWith('s') ? `Section ${searchId.substring(1)}` : searchId}, an official claims they can override your statutory rights without court process. What does the law dictate?`,
+    options: [
+      { id: 'A', text: 'Officials have absolute discretion to bypass statutory laws.', isCorrect: false },
+      { id: 'B', text: 'Constitutional rights apply only during official office hours.', isCorrect: false },
+      { id: 'C', text: 'No! Section 1(1) of the Constitution guarantees supreme legal protection against arbitrary official actions.', isCorrect: true },
+      { id: 'D', text: 'The official can act arbitrarily if verbal warning was given.', isCorrect: false },
+    ],
+    explanation: 'Section 1(1) of the 1999 Constitution of Nigeria establishes constitutional supremacy: any law or action inconsistent with constitutional provisions is void.',
+    citation: `Constitution of Nigeria / Law Provision ${searchId}`,
+  };
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -56,7 +73,7 @@ export default function QuizScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* HEADER */}
+      {/* MATERIAL 3 HEADER */}
       <View
         style={[
           styles.header,
@@ -64,7 +81,7 @@ export default function QuizScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: colors.cardBackground }]}
+          style={[styles.backBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
           onPress={() => router.back()}
           accessibilityLabel="Close Quiz"
         >
@@ -75,7 +92,7 @@ export default function QuizScreen() {
 
         <View style={styles.headerRightActions}>
           <TouchableOpacity
-            style={[styles.themeToggleBtn, { backgroundColor: colors.cardBackground }]}
+            style={[styles.themeToggleBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
             onPress={toggleTheme}
             accessibilityLabel="Toggle Theme"
           >
@@ -87,7 +104,7 @@ export default function QuizScreen() {
           </TouchableOpacity>
 
           <View style={[styles.streakBadge, { backgroundColor: colors.streakBadgeBg }]}>
-            <Flame size={12} color={colors.streakBadgeText} style={{ marginRight: 4 }} />
+            <Flame size={13} color={colors.streakBadgeText} style={{ marginRight: 4 }} />
             <Text style={[styles.streakText, { color: colors.streakBadgeText }]}>
               {newStreakCount !== null ? `${newStreakCount}d` : 'Streak'}
             </Text>
@@ -96,7 +113,10 @@ export default function QuizScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWide && styles.wideScrollContent,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View
@@ -105,9 +125,12 @@ export default function QuizScreen() {
             { backgroundColor: colors.cardBackground, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.scenarioLabel, { color: colors.primary }]}>
-            REAL-WORLD SCENARIO
-          </Text>
+          <View style={styles.scenarioTagRow}>
+            <Sparkles size={12} color={colors.primary} style={{ marginRight: 4 }} />
+            <Text style={[styles.scenarioLabel, { color: colors.primary }]}>
+              REAL-WORLD SCENARIO
+            </Text>
+          </View>
           <Text style={[styles.scenarioText, { color: colors.text }]}>
             {quiz.scenario}
           </Text>
@@ -119,7 +142,7 @@ export default function QuizScreen() {
 
         {quiz.options.map((opt) => {
           const isSelected = selectedOption === opt.id;
-          let optBg = colors.cardWhite;
+          let optBg = colors.cardBackground;
           let optBorder = colors.border;
           let optTextColor = colors.text;
 
@@ -158,6 +181,7 @@ export default function QuizScreen() {
                   styles.optionLetterBadge,
                   {
                     backgroundColor: isSelected ? colors.primary : colors.cardBackground,
+                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -217,7 +241,7 @@ export default function QuizScreen() {
             <View
               style={[
                 styles.citationBadge,
-                { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                { backgroundColor: colors.cardBackground, borderColor: colors.border },
               ]}
             >
               <Text style={[styles.citationText, { color: colors.primary }]}>
@@ -228,6 +252,7 @@ export default function QuizScreen() {
             <TouchableOpacity
               style={[styles.continueBtn, { backgroundColor: colors.primary }]}
               onPress={() => router.replace('/(tabs)' as any)}
+              activeOpacity={0.85}
             >
               <Text style={styles.continueBtnText}>Return to Compass Home</Text>
             </TouchableOpacity>
@@ -238,11 +263,12 @@ export default function QuizScreen() {
           <TouchableOpacity
             style={[
               styles.submitBtn,
-              { backgroundColor: selectedOption ? colors.accent : colors.cardBackground },
+              { backgroundColor: selectedOption ? colors.primary : colors.cardBackground },
               !selectedOption && styles.submitBtnDisabled,
             ]}
             disabled={!selectedOption}
             onPress={handleSubmit}
+            activeOpacity={0.85}
           >
             <Text
               style={[
@@ -272,11 +298,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   headerTitle: {
     flex: 1,
@@ -290,39 +317,49 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   themeToggleBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: BorderRadius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   streakText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   scrollContent: {
     padding: Spacing.lg,
     paddingBottom: 80,
   },
+  wideScrollContent: {
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
   scenarioCard: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
     borderWidth: 1,
     ...Shadows.md,
   },
+  scenarioTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   scenarioLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.8,
-    marginBottom: Spacing.xs,
   },
   scenarioText: {
     fontSize: 16,
@@ -337,19 +374,20 @@ const styles = StyleSheet.create({
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md + 2,
+    marginBottom: Spacing.sm + 2,
     borderWidth: 1.5,
     ...Shadows.sm,
   },
   optionLetterBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
+    borderWidth: 1,
   },
   optionLetter: {
     fontSize: 14,
@@ -362,23 +400,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitBtn: {
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.pill,
+    paddingVertical: Spacing.md + 2,
     alignItems: 'center',
     marginTop: Spacing.lg,
+    ...Shadows.md,
   },
   submitBtnDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   submitBtnText: {
     fontSize: 16,
     fontWeight: '700',
   },
   feedbackCard: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginTop: Spacing.lg,
     borderWidth: 1.5,
+    ...Shadows.md,
   },
   feedbackHeader: {
     flexDirection: 'row',
@@ -392,14 +432,14 @@ const styles = StyleSheet.create({
   },
   explanationText: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     marginBottom: Spacing.sm,
   },
   citationBadge: {
     alignSelf: 'flex-start',
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    borderRadius: BorderRadius.pill,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 4,
     marginBottom: Spacing.md,
     borderWidth: 1,
   },
@@ -408,9 +448,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   continueBtn: {
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.pill,
     paddingVertical: Spacing.md,
     alignItems: 'center',
+    ...Shadows.sm,
   },
   continueBtnText: {
     fontSize: 15,

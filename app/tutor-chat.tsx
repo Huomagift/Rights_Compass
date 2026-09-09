@@ -10,11 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { X, AlertTriangle, BookOpen, Mic, Send, WifiOff, Sun, Moon } from 'lucide-react-native';
-import { Spacing, BorderRadius } from '../constants/theme';
+import { X, AlertTriangle, BookOpen, Mic, Send, WifiOff, Sun, Moon, Sparkles } from 'lucide-react-native';
+import { Spacing, BorderRadius, Shadows } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import { routeTutorQuery, checkIsOnline, RoutedTutorResponse } from '../services/tutorRouter';
 
@@ -39,6 +40,7 @@ const SUGGESTED_PROMPTS = [
 
 export default function TutorChatScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { colors, isDark, toggleTheme } = useTheme();
   const [inputText, setInputText] = useState('');
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -51,6 +53,8 @@ export default function TutorChatScreen() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+
+  const isWide = width > 768;
 
   useEffect(() => {
     // Initial Network Connectivity Check
@@ -112,7 +116,7 @@ export default function TutorChatScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* MODAL HEADER */}
+        {/* MATERIAL 3 HEADER */}
         <View
           style={[
             styles.header,
@@ -134,7 +138,7 @@ export default function TutorChatScreen() {
                   <>
                     <View style={[styles.greenDot, { backgroundColor: colors.success }]} />
                     <Text style={[styles.statusText, { color: colors.textMuted }]}>
-                      🟢 Online AI Pipeline
+                      🟢 Online RAG Pipeline
                     </Text>
                   </>
                 ) : (
@@ -154,7 +158,7 @@ export default function TutorChatScreen() {
             <TouchableOpacity
               style={[
                 styles.themeToggleBtn,
-                { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                { backgroundColor: colors.cardBackground, borderColor: colors.border },
               ]}
               onPress={toggleTheme}
               activeOpacity={0.8}
@@ -167,18 +171,21 @@ export default function TutorChatScreen() {
               )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.closeBtn}
+              style={[styles.closeBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
               onPress={() => router.back()}
               accessibilityLabel="Close Chat"
             >
-              <X size={22} color={colors.text} />
+              <X size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* CHAT MESSAGES */}
         <ScrollView
-          contentContainerStyle={styles.chatScroll}
+          contentContainerStyle={[
+            styles.chatScroll,
+            isWide && styles.wideChatScroll,
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {messages.map((msg) => {
@@ -206,7 +213,10 @@ export default function TutorChatScreen() {
                       ? [styles.userBubble, { backgroundColor: colors.primary }]
                       : [
                           styles.botBubble,
-                          { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                          {
+                            backgroundColor: colors.cardBackground,
+                            borderColor: colors.border,
+                          },
                         ],
                     msg.isUrgent && styles.urgentBubble,
                   ]}
@@ -251,7 +261,7 @@ export default function TutorChatScreen() {
                     <View style={styles.modeBadgeRow}>
                       <Text style={[styles.modeBadgeText, { color: colors.textMuted }]}>
                         {msg.mode === 'online'
-                          ? '✨ Verified via Supabase Server Retrieval'
+                          ? '✨ Verified via Server RAG Retrieval'
                           : '⚡ Instant Offline Fallback (Cached 1999 Constitution)'}
                       </Text>
                     </View>
@@ -277,7 +287,7 @@ export default function TutorChatScreen() {
                   styles.bubble,
                   styles.botBubble,
                   {
-                    backgroundColor: colors.cardWhite,
+                    backgroundColor: colors.cardBackground,
                     borderColor: colors.border,
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -294,7 +304,7 @@ export default function TutorChatScreen() {
           {messages.length < 3 && (
             <View style={styles.suggestedSection}>
               <Text style={[styles.suggestedTitle, { color: colors.textMuted }]}>
-                Common Questions:
+                Suggested Situations & Queries:
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {SUGGESTED_PROMPTS.map((prompt, i) => (
@@ -302,10 +312,12 @@ export default function TutorChatScreen() {
                     key={i}
                     style={[
                       styles.promptChip,
-                      { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                      { backgroundColor: colors.cardBackground, borderColor: colors.border },
                     ]}
                     onPress={() => handleSend(prompt)}
+                    activeOpacity={0.8}
                   >
+                    <Sparkles size={12} color={colors.primary} style={{ marginRight: 4 }} />
                     <Text style={[styles.promptChipText, { color: colors.text }]}>{prompt}</Text>
                   </TouchableOpacity>
                 ))}
@@ -314,11 +326,12 @@ export default function TutorChatScreen() {
           )}
         </ScrollView>
 
-        {/* INPUT BAR */}
+        {/* MATERIAL 3 INPUT BAR */}
         <View
           style={[
             styles.inputContainer,
             { backgroundColor: colors.cardBackground, borderTopColor: colors.border },
+            isWide && styles.wideInputContainer,
           ]}
         >
           <TouchableOpacity style={styles.voiceNoteBtn}>
@@ -345,7 +358,7 @@ export default function TutorChatScreen() {
           <TouchableOpacity
             style={[styles.sendBtn, { backgroundColor: colors.primary }]}
             onPress={() => handleSend()}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             disabled={isTyping}
           >
             <Send size={18} color="#FFFFFF" />
@@ -378,21 +391,21 @@ const styles = StyleSheet.create({
     gap: Spacing.xs + 2,
   },
   themeToggleBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   mascotAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   statusRow: {
     flexDirection: 'row',
@@ -407,14 +420,24 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   closeBtn: {
-    padding: Spacing.xs,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   chatScroll: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  wideChatScroll: {
+    maxWidth: 768,
+    alignSelf: 'center',
+    width: '100%',
   },
   messageRow: {
     flexDirection: 'row',
@@ -428,22 +451,23 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   msgMascot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     marginRight: Spacing.xs,
     marginBottom: 4,
   },
   bubble: {
-    maxWidth: '80%',
-    borderRadius: BorderRadius.lg,
+    maxWidth: '82%',
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
+    ...Shadows.sm,
   },
   userBubble: {
-    borderBottomRightRadius: 2,
+    borderBottomRightRadius: 4,
   },
   botBubble: {
-    borderBottomLeftRadius: 2,
+    borderBottomLeftRadius: 4,
     borderWidth: 1,
   },
   urgentBubble: {
@@ -465,7 +489,7 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   urgentBubbleText: {
     color: '#991B1B',
@@ -481,8 +505,8 @@ const styles = StyleSheet.create({
   emergencyTipText: {
     fontSize: 12,
     color: '#92400E',
-    fontWeight: '500',
-    lineHeight: 16,
+    fontWeight: '600',
+    lineHeight: 17,
   },
   citationBox: {
     flexDirection: 'row',
@@ -493,7 +517,7 @@ const styles = StyleSheet.create({
   },
   citationText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 4,
   },
   modeBadgeRow: {
@@ -513,18 +537,21 @@ const styles = StyleSheet.create({
   },
   suggestedTitle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: Spacing.xs,
   },
   promptChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
+    paddingVertical: Spacing.xs + 4,
     borderRadius: BorderRadius.pill,
     borderWidth: 1,
     marginRight: Spacing.xs,
   },
   promptChipText: {
     fontSize: 12,
+    fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -532,6 +559,11 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     paddingHorizontal: Spacing.md,
     borderTopWidth: 1,
+  },
+  wideInputContainer: {
+    maxWidth: 768,
+    alignSelf: 'center',
+    width: '100%',
   },
   voiceNoteBtn: {
     padding: Spacing.xs,
@@ -541,17 +573,18 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: BorderRadius.pill,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
+    paddingVertical: Spacing.xs + 4,
     fontSize: 14,
     borderWidth: 1,
     maxHeight: 100,
   },
   sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: Spacing.xs,
+    ...Shadows.sm,
   },
 });

@@ -32,7 +32,7 @@ import {
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { updateDailyStreak, UserProfile } from '../../services/offlineStorage';
-import { FEATURED_GUIDE as DEFAULT_FEATURED_GUIDE, RECENT_GUIDES as DEFAULT_RECENT_GUIDES, GuideItem } from '../../data/mockData';
+import { FEATURED_GUIDE as DEFAULT_FEATURED_GUIDE, RECENT_GUIDES as DEFAULT_RECENT_GUIDES, GuideItem } from '../../data/constitutionStore';
 import { NotificationModal } from '../../components/NotificationModal';
 import { HeaderMenuModal } from '../../components/HeaderMenuModal';
 import { FloatingAIBot } from '../../components/FloatingAIBot';

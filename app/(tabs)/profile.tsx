@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Alert,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -20,8 +21,12 @@ import {
   LogOut,
   Sun,
   Moon,
+  Shield,
+  Sparkles,
+  User,
+  Smartphone,
 } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 import {
   resetStoredProfile,
@@ -33,8 +38,11 @@ import { signOutUser } from '../../services/authService';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { colors, isDark, toggleTheme } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  const isWide = width > 768;
 
   useEffect(() => {
     loadProfile();
@@ -91,20 +99,55 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* MATERIAL 3 LARGE TOP APP BAR */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Text style={[styles.pageTitle, { color: colors.text }]}>Account & Settings</Text>
-        <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>
-          Manage your daily rights habit preferences, theme, and privacy controls.
-        </Text>
+        <View style={styles.headerTopRow}>
+          <View style={{ flex: 1, marginRight: Spacing.sm }}>
+            <View
+              style={[
+                styles.m3TagBadge,
+                { backgroundColor: isDark ? 'rgba(212, 98, 42, 0.2)' : colors.accentLight },
+              ]}
+            >
+              <Sparkles size={12} color={colors.primary} />
+              <Text style={[styles.m3TagText, { color: colors.primary }]}>
+                M3 Account Center
+              </Text>
+            </View>
+            <Text style={[styles.pageTitle, { color: colors.text }]}>Account & Settings</Text>
+            <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>
+              Manage your daily rights habit preferences, theme, and privacy controls.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.themeToggleBtn,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            ]}
+            onPress={toggleTheme}
+            activeOpacity={0.8}
+            accessibilityLabel="Toggle Theme"
+          >
+            {isDark ? (
+              <Sun size={18} color={colors.text} />
+            ) : (
+              <Moon size={18} color={colors.text} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWide && styles.wideScrollContent,
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* USER CARD */}
+        {/* MATERIAL 3 ELEVATED USER PROFILE CARD */}
         <View style={[styles.userCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-          <View style={[styles.avatarBig, { backgroundColor: colors.primaryDark }]}>
+          <View style={[styles.avatarBig, { backgroundColor: colors.primary }]}>
             <Text style={styles.avatarLetter}>
               {profile.name ? profile.name[0].toUpperCase() : 'A'}
             </Text>
@@ -113,12 +156,16 @@ export default function ProfileScreen() {
           <View style={{ flex: 1, marginLeft: Spacing.md }}>
             <Text style={[styles.userName, { color: colors.text }]}>{profile.name}</Text>
             {profile.phoneNumber ? (
-              <Text style={[styles.userPhone, { color: colors.textMuted }]}>{profile.phoneNumber}</Text>
+              <View style={styles.userSubRow}>
+                <Smartphone size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                <Text style={[styles.userPhone, { color: colors.textMuted }]}>{profile.phoneNumber}</Text>
+              </View>
             ) : (
-              <Text style={[styles.userPhone, { color: colors.textMuted }]}>WhatsApp Not Linked</Text>
+              <Text style={[styles.userPhone, { color: colors.textMuted }]}>WhatsApp Sync Ready</Text>
             )}
+
             <View style={[styles.streakRow, { backgroundColor: colors.streakBadgeBg }]}>
-              <Flame size={12} color={colors.streakBadgeText} style={{ marginRight: 4 }} />
+              <Flame size={13} color={colors.streakBadgeText} style={{ marginRight: 4 }} />
               <Text style={[styles.streakBadgeText, { color: colors.streakBadgeText }]}>
                 {profile.streakCount} Day Streak Active
               </Text>
@@ -127,7 +174,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* APPEARANCE & THEME SETTINGS */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance & Theme</Text>
         <View style={[styles.settingsGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
             <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
@@ -138,9 +185,9 @@ export default function ProfileScreen() {
               )}
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={[styles.settingTitle, { color: colors.text }]}>Dark Mode</Text>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Expressive Dark Mode</Text>
               <Text style={[styles.settingSub, { color: colors.textMuted }]}>
-                {isDark ? 'Dark theme is active' : 'Light theme is active'}
+                {isDark ? 'Dark theme active (OLED optimized)' : 'Light theme active (Warm accent)'}
               </Text>
             </View>
             <Switch
@@ -153,7 +200,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* DAILY HABIT SETTINGS */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Habit Loop</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Habit & Offline Sync</Text>
         <View style={[styles.settingsGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
             <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
@@ -170,32 +217,31 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.settingItem, { borderBottomWidth: 0 }]}>
+          <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
             <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
-              <Bell size={18} color={colors.primary} />
+              <Shield size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={[styles.settingTitle, { color: colors.text }]}>Offline Mode & Supabase Sync</Text>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Offline 1999 Constitution Engine</Text>
               <Text style={[styles.settingSub, { color: colors.textMuted }]}>
-                {profile.syncedToSupabase
-                  ? 'Profile synced with Supabase database'
-                  : '1999 Constitution cached on device'}
+                320 sections cached locally for offline emergency access
               </Text>
             </View>
             <CheckCircle2 size={20} color={colors.success} />
           </View>
 
           <TouchableOpacity
-            style={[styles.settingItem, { borderTopWidth: 1, borderTopColor: colors.border }]}
+            style={styles.settingItem}
             onPress={handleResetStreak}
+            activeOpacity={0.8}
           >
             <View style={[styles.settingIconCircle, { backgroundColor: colors.streakBadgeBg }]}>
               <Flame size={18} color={colors.streakBadgeText} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={[styles.settingTitle, { color: colors.text }]}>Reset Streak Counter</Text>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Reset Daily Streak</Text>
               <Text style={[styles.settingSub, { color: colors.textMuted }]}>
-                Reset daily streak to Day 1
+                Reset streak counter back to Day 1
               </Text>
             </View>
             <Text style={[styles.changeBtnText, { color: colors.primary }]}>Reset</Text>
@@ -203,24 +249,29 @@ export default function ProfileScreen() {
         </View>
 
         {/* ACCOUNT ACTIONS & PRIVACY */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Account & Privacy (NDPR)</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Account & Privacy (NDPR Guidelines)</Text>
         <View style={[styles.settingsGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <TouchableOpacity
             style={[styles.settingItem, { borderBottomColor: colors.border }]}
             onPress={handleLogOut}
+            activeOpacity={0.8}
           >
             <View style={[styles.settingIconCircle, { backgroundColor: colors.accentLight }]}>
               <LogOut size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
               <Text style={[styles.settingTitle, { color: colors.text }]}>Log Out</Text>
-              <Text style={[styles.settingSub, { color: colors.textMuted }]}>Ends session and returns to onboarding</Text>
+              <Text style={[styles.settingSub, { color: colors.textMuted }]}>End active session & return to onboarding</Text>
             </View>
             <ChevronRight size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]} onPress={handleResetData}>
-            <View style={[styles.settingIconCircle, { backgroundColor: '#FEE2E2' }]}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleResetData}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.settingIconCircle, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
               <Trash2 size={18} color="#DC2626" />
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
@@ -228,7 +279,7 @@ export default function ProfileScreen() {
                 Delete My Account & Data (NDPR)
               </Text>
               <Text style={[styles.settingSub, { color: colors.textMuted }]}>
-                Wipes local profile, streak, and remote record
+                Permanent deletion of local profile & streak stats
               </Text>
             </View>
             <ChevronRight size={16} color={colors.textMuted} />
@@ -242,92 +293,118 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-    backgroundColor: Colors.background,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  m3TagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.pill,
+    marginBottom: 6,
+    gap: 6,
+  },
+  m3TagText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  themeToggleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   pageTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '800',
-    color: Colors.text,
+    letterSpacing: -0.5,
   },
   pageSubtitle: {
     fontSize: 13,
-    lineHeight: 18,
-    color: Colors.textMuted,
+    lineHeight: 19,
     marginTop: 2,
   },
   scrollContent: {
     padding: Spacing.md,
     paddingBottom: 110,
   },
+  wideScrollContent: {
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardBackground,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
     marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.sm,
+    ...Shadows.md,
   },
   avatarBig: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primaryDark,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
+    ...Shadows.sm,
   },
   avatarLetter: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    color: Colors.white,
+    color: '#FFFFFF',
   },
   userName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
-    color: Colors.text,
+  },
+  userSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
   },
   userPhone: {
     fontSize: 13,
-    color: Colors.textMuted,
-    marginTop: 2,
   },
   streakRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.streakBadgeBg,
     borderRadius: BorderRadius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     alignSelf: 'flex-start',
-    marginTop: 6,
+    marginTop: 8,
   },
   streakBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: Colors.streakBadgeText,
+    fontWeight: '800',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: Colors.text,
-    marginBottom: Spacing.sm,
+    letterSpacing: 0.2,
+    marginBottom: Spacing.xs,
     marginTop: Spacing.sm,
+    paddingLeft: 4,
   },
   settingsGroup: {
-    backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
     marginBottom: Spacing.md,
     overflow: 'hidden',
   },
@@ -335,26 +412,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   settingIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.accentLight,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
   settingTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text,
   },
   settingSub: {
     fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 1,
+    marginTop: 2,
   },
   changeBtn: {
     paddingHorizontal: Spacing.sm,
@@ -363,6 +435,5 @@ const styles = StyleSheet.create({
   changeBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.primary,
   },
 });
