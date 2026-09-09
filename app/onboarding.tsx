@@ -32,7 +32,9 @@ import {
   Phone,
   Sparkles,
   Zap,
+  Book,
   WifiOff,
+  Flame,
   Bot,
 } from 'lucide-react-native';
 import { Spacing, BorderRadius, Shadows } from '../constants/theme';
@@ -82,6 +84,12 @@ const DOMAIN_OPTIONS: DomainOption[] = [
     description: 'Freedom of expression, peaceful assembly, privacy & fair hearing rights.',
     Icon: Scale,
   },
+  {
+    id: 'other',
+    label: 'General Knowledge',
+    description: '',
+    Icon: Book,
+  }
 ];
 
 interface TimeOption {

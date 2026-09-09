@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, CheckCircle2, AlertCircle, Flame, Sun, Moon } from 'lucide-react-native';
 import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
-import { SAMPLE_QUIZZES } from '../../data/mockData';
+import { SAMPLE_QUIZZES } from '../../data/constitutionStore';
 import { updateDailyStreak } from '../../services/offlineStorage';
 import { ErrorState } from '../../components/ErrorState';
 
@@ -20,7 +20,20 @@ export default function QuizScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const quiz = SAMPLE_QUIZZES[id || 'police-stops'];
+  const searchId = id || 'police-stops';
+  const quiz = SAMPLE_QUIZZES[searchId] || {
+    id: `q_${searchId}`,
+    guideId: searchId,
+    scenario: `In a scenario involving ${searchId.startsWith('s') ? `Section ${searchId.substring(1)}` : searchId}, an official claims they can override your statutory rights without court process. What does the law dictate?`,
+    options: [
+      { id: 'A', text: 'Officials have absolute discretion to bypass statutory laws.', isCorrect: false },
+      { id: 'B', text: 'Constitutional rights apply only during official office hours.', isCorrect: false },
+      { id: 'C', text: 'No! Section 1(1) of the Constitution guarantees supreme legal protection against arbitrary official actions.', isCorrect: true },
+      { id: 'D', text: 'The official can act arbitrarily if verbal warning was given.', isCorrect: false },
+    ],
+    explanation: 'Section 1(1) of the 1999 Constitution of Nigeria establishes constitutional supremacy: any law or action inconsistent with constitutional provisions is void.',
+    citation: `Constitution of Nigeria / Law Provision ${searchId}`,
+  };
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);

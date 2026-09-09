@@ -11,8 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Share2, Bookmark, Scale, CheckCircle2, Sun, Moon } from 'lucide-react-native';
 import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
-import { FEATURED_GUIDE, RECENT_GUIDES } from '../../data/mockData';
-import { CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
+import { FEATURED_GUIDE, RECENT_GUIDES, CONSTITUTION_SECTIONS } from '../../data/constitutionStore';
 import { EmptyState } from '../../components/EmptyState';
 
 export default function GuideDetailScreen() {
