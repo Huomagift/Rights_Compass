@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,20 +9,25 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius } from '../constants/theme';
-import { processTutorQuery, TutorResponse } from '../services/tutorAgent';
+import { X, AlertTriangle, BookOpen, Mic, Send, WifiOff, Sun, Moon, Sparkles } from 'lucide-react-native';
+import { Spacing, BorderRadius, Shadows } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { routeTutorQuery, checkIsOnline, RoutedTutorResponse } from '../services/tutorRouter';
 
 interface ChatMessage {
   id: string;
   sender: 'user' | 'bot';
   text: string;
   citation?: string;
+  sources?: string[];
   isUrgent?: boolean;
   emergencyTip?: string;
+  mode?: 'online' | 'offline';
   timestamp: string;
 }
 
@@ -35,19 +40,30 @@ const SUGGESTED_PROMPTS = [
 
 export default function TutorChatScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const { colors, isDark, toggleTheme } = useTheme();
   const [inputText, setInputText] = useState('');
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'm1',
       sender: 'bot',
-      text: "Hello! I'm your Rights Compass AI Tutor. Ask me any question about your legal rights in Nigeria. If you are in an active situation, tell me what is happening right now!",
+      text: "Hello! I'm Aegis, your Rights Compass AI Legal Tutor. Ask me any question about your legal rights in Nigeria. If you are in an active situation, tell me what is happening right now!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
 
-  const handleSend = (textToSend?: string) => {
+  const isWide = width > 768;
+
+  useEffect(() => {
+    // Initial Network Connectivity Check
+    checkIsOnline().then((online) => setIsOnline(online));
+  }, []);
+
+  const handleSend = async (textToSend?: string) => {
     const query = textToSend || inputText;
-    if (!query.trim()) return;
+    if (!query.trim() || isTyping) return;
 
     const userMsg: ChatMessage = {
       id: `u_${Date.now()}`,
@@ -58,31 +74,55 @@ export default function TutorChatScreen() {
 
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputText('');
+    setIsTyping(true);
 
-    // Process with Tutor Agent
-    setTimeout(() => {
-      const response: TutorResponse = processTutorQuery(query);
+    try {
+      // Route query through tutorRouter (NetInfo connectivity check -> Online Server RAG vs Offline Local RAG)
+      const response: RoutedTutorResponse = await routeTutorQuery(query);
+
+      // Re-verify network status for UI badge accuracy
+      setIsOnline(response.mode === 'online');
+
       const botMsg: ChatMessage = {
         id: `b_${Date.now()}`,
         sender: 'bot',
         text: response.answer,
         citation: response.citation,
+        sources: response.sources,
         isUrgent: response.isUrgent,
         emergencyTip: response.emergencyTip,
+        mode: response.mode,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
+
       setMessages((prev) => [...prev, botMsg]);
-    }, 400);
+    } catch (e: any) {
+      console.error('Error handling tutor query:', e);
+      const errorMsg: ChatMessage = {
+        id: `err_${Date.now()}`,
+        sender: 'bot',
+        text: 'Sorry, I encountered an error connecting to the legal database. Please check your network connection and try again.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* MODAL HEADER */}
-        <View style={styles.header}>
+        {/* MATERIAL 3 HEADER */}
+        <View
+          style={[
+            styles.header,
+            { backgroundColor: colors.cardBackground, borderBottomColor: colors.border },
+          ]}
+        >
           <View style={styles.headerMascotRow}>
             <Image
               source={require('../assets/images/mascot.png')}
@@ -90,25 +130,62 @@ export default function TutorChatScreen() {
               contentFit="cover"
             />
             <View style={{ marginLeft: Spacing.sm }}>
-              <Text style={styles.headerTitle}>AI Rights Tutor</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                Aegis • AI Legal Tutor
+              </Text>
               <View style={styles.statusRow}>
-                <View style={styles.greenDot} />
-                <Text style={styles.statusText}>Grounded in Nigerian Law</Text>
+                {isOnline ? (
+                  <>
+                    <View style={[styles.greenDot, { backgroundColor: colors.success }]} />
+                    <Text style={[styles.statusText, { color: colors.textMuted }]}>
+                      🟢 Online RAG Pipeline
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff size={12} color="#D97706" style={{ marginRight: 4 }} />
+                    <Text style={[styles.statusText, { color: '#D97706' }]}>
+                      ⚡ Offline Mode (1999 Constitution)
+                    </Text>
+                  </>
+                )}
               </View>
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.closeBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="close" size={22} color={Colors.text} />
-          </TouchableOpacity>
+          {/* Action buttons: Theme Toggle + Close */}
+          <View style={styles.headerRightActions}>
+            <TouchableOpacity
+              style={[
+                styles.themeToggleBtn,
+                { backgroundColor: colors.cardBackground, borderColor: colors.border },
+              ]}
+              onPress={toggleTheme}
+              activeOpacity={0.8}
+              accessibilityLabel="Toggle Theme"
+            >
+              {isDark ? (
+                <Sun size={17} color={colors.text} />
+              ) : (
+                <Moon size={17} color={colors.text} />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.closeBtn, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
+              onPress={() => router.back()}
+              accessibilityLabel="Close Chat"
+            >
+              <X size={20} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* CHAT MESSAGES */}
         <ScrollView
-          contentContainerStyle={styles.chatScroll}
+          contentContainerStyle={[
+            styles.chatScroll,
+            isWide && styles.wideChatScroll,
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {messages.map((msg) => {
@@ -132,13 +209,21 @@ export default function TutorChatScreen() {
                 <View
                   style={[
                     styles.bubble,
-                    isUser ? styles.userBubble : styles.botBubble,
+                    isUser
+                      ? [styles.userBubble, { backgroundColor: colors.primary }]
+                      : [
+                          styles.botBubble,
+                          {
+                            backgroundColor: colors.cardBackground,
+                            borderColor: colors.border,
+                          },
+                        ],
                     msg.isUrgent && styles.urgentBubble,
                   ]}
                 >
                   {msg.isUrgent && (
                     <View style={styles.urgentHeader}>
-                      <Ionicons name="warning" size={16} color="#DC2626" />
+                      <AlertTriangle size={16} color="#DC2626" />
                       <Text style={styles.urgentHeaderText}>
                         CRISIS / IN-PROGRESS ALERT
                       </Text>
@@ -148,7 +233,7 @@ export default function TutorChatScreen() {
                   <Text
                     style={[
                       styles.bubbleText,
-                      isUser && styles.userBubbleText,
+                      { color: isUser ? '#FFFFFF' : colors.text },
                       msg.isUrgent && styles.urgentBubbleText,
                     ]}
                   >
@@ -164,30 +249,76 @@ export default function TutorChatScreen() {
                   )}
 
                   {msg.citation && (
-                    <View style={styles.citationBox}>
-                      <Ionicons name="book" size={12} color={Colors.primary} />
-                      <Text style={styles.citationText}>{msg.citation}</Text>
+                    <View style={[styles.citationBox, { borderTopColor: colors.border }]}>
+                      <BookOpen size={12} color={colors.primary} />
+                      <Text style={[styles.citationText, { color: colors.primary }]}>
+                        {msg.citation}
+                      </Text>
                     </View>
                   )}
 
-                  <Text style={styles.timestampText}>{msg.timestamp}</Text>
+                  {!isUser && msg.mode && (
+                    <View style={styles.modeBadgeRow}>
+                      <Text style={[styles.modeBadgeText, { color: colors.textMuted }]}>
+                        {msg.mode === 'online'
+                          ? '✨ Verified via Server RAG Retrieval'
+                          : '⚡ Instant Offline Fallback (Cached 1999 Constitution)'}
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={[styles.timestampText, { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textMuted }]}>
+                    {msg.timestamp}
+                  </Text>
                 </View>
               </View>
             );
           })}
 
+          {isTyping && (
+            <View style={[styles.messageRow, styles.botRow]}>
+              <Image
+                source={require('../assets/images/mascot.png')}
+                style={styles.msgMascot}
+                contentFit="cover"
+              />
+              <View
+                style={[
+                  styles.bubble,
+                  styles.botBubble,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    borderColor: colors.border,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  },
+                ]}
+              >
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+                <Text style={[styles.bubbleText, { color: colors.text }]}>Analyzing legal sources...</Text>
+              </View>
+            </View>
+          )}
+
           {/* SUGGESTED PROMPTS */}
           {messages.length < 3 && (
             <View style={styles.suggestedSection}>
-              <Text style={styles.suggestedTitle}>Common Questions:</Text>
+              <Text style={[styles.suggestedTitle, { color: colors.textMuted }]}>
+                Suggested Situations & Queries:
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {SUGGESTED_PROMPTS.map((prompt, i) => (
                   <TouchableOpacity
                     key={i}
-                    style={styles.promptChip}
+                    style={[
+                      styles.promptChip,
+                      { backgroundColor: colors.cardBackground, borderColor: colors.border },
+                    ]}
                     onPress={() => handleSend(prompt)}
+                    activeOpacity={0.8}
                   >
-                    <Text style={styles.promptChipText}>{prompt}</Text>
+                    <Sparkles size={12} color={colors.primary} style={{ marginRight: 4 }} />
+                    <Text style={[styles.promptChipText, { color: colors.text }]}>{prompt}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -195,16 +326,29 @@ export default function TutorChatScreen() {
           )}
         </ScrollView>
 
-        {/* INPUT BAR */}
-        <View style={styles.inputContainer}>
+        {/* MATERIAL 3 INPUT BAR */}
+        <View
+          style={[
+            styles.inputContainer,
+            { backgroundColor: colors.cardBackground, borderTopColor: colors.border },
+            isWide && styles.wideInputContainer,
+          ]}
+        >
           <TouchableOpacity style={styles.voiceNoteBtn}>
-            <Ionicons name="mic-outline" size={22} color={Colors.primary} />
+            <Mic size={22} color={colors.primary} />
           </TouchableOpacity>
 
           <TextInput
-            style={styles.chatInput}
+            style={[
+              styles.chatInput,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
             placeholder="Ask anything about your rights..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={inputText}
             onChangeText={setInputText}
             onSubmitEditing={() => handleSend()}
@@ -212,11 +356,12 @@ export default function TutorChatScreen() {
           />
 
           <TouchableOpacity
-            style={styles.sendBtn}
+            style={[styles.sendBtn, { backgroundColor: colors.primary }]}
             onPress={() => handleSend()}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
+            disabled={isTyping}
           >
-            <Ionicons name="send" size={18} color={Colors.white} />
+            <Send size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -227,7 +372,6 @@ export default function TutorChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -235,23 +379,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 4,
-    backgroundColor: Colors.cardBackground,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   headerMascotRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs + 2,
+  },
+  themeToggleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
   mascotAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.text,
   },
   statusRow: {
     flexDirection: 'row',
@@ -259,32 +413,36 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   greenDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.success,
-    marginRight: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
   statusText: {
-    fontSize: 11,
-    color: Colors.textMuted,
+    fontSize: 12,
     fontWeight: '600',
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.cardWhite,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   chatScroll: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
   },
+  wideChatScroll: {
+    maxWidth: 768,
+    alignSelf: 'center',
+    width: '100%',
+  },
   messageRow: {
     flexDirection: 'row',
     marginBottom: Spacing.md,
+    alignItems: 'flex-end',
   },
   userRow: {
     justifyContent: 'flex-end',
@@ -293,26 +451,24 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   msgMascot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     marginRight: Spacing.xs,
-    alignSelf: 'flex-end',
+    marginBottom: 4,
   },
   bubble: {
     maxWidth: '82%',
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
+    ...Shadows.sm,
   },
   userBubble: {
-    backgroundColor: Colors.primary,
     borderBottomRightRadius: 4,
   },
   botBubble: {
-    backgroundColor: Colors.cardBackground,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   urgentBubble: {
     backgroundColor: '#FEF2F2',
@@ -333,48 +489,46 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     fontSize: 14,
-    lineHeight: 20,
-    color: Colors.text,
-  },
-  userBubbleText: {
-    color: Colors.white,
+    lineHeight: 21,
   },
   urgentBubbleText: {
     color: '#991B1B',
-    fontWeight: '600',
   },
   emergencyTipBox: {
-    marginTop: Spacing.xs,
-    backgroundColor: Colors.cardWhite,
+    marginTop: Spacing.xs + 2,
+    backgroundColor: '#FFFBEB',
+    padding: Spacing.xs + 2,
     borderRadius: BorderRadius.sm,
-    padding: Spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.warning,
+    borderLeftColor: '#D97706',
   },
   emergencyTipText: {
     fontSize: 12,
+    color: '#92400E',
     fontWeight: '600',
-    color: Colors.text,
+    lineHeight: 17,
   },
   citationBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.xs,
-    backgroundColor: Colors.accentLight,
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
+    marginTop: Spacing.xs + 2,
+    paddingTop: Spacing.xs,
+    borderTopWidth: 1,
   },
   citationText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: Colors.primary,
     marginLeft: 4,
+  },
+  modeBadgeRow: {
+    marginTop: 4,
+  },
+  modeBadgeText: {
+    fontSize: 10,
+    fontStyle: 'italic',
   },
   timestampText: {
     fontSize: 10,
-    color: Colors.textMuted,
     marginTop: 4,
     alignSelf: 'flex-end',
   },
@@ -384,58 +538,56 @@ const styles = StyleSheet.create({
   suggestedTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
   promptChip: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: BorderRadius.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    marginRight: Spacing.xs,
+    paddingVertical: Spacing.xs + 4,
+    borderRadius: BorderRadius.pill,
     borderWidth: 1,
-    borderColor: Colors.border,
+    marginRight: Spacing.xs,
   },
   promptChipText: {
     fontSize: 12,
-    color: Colors.primary,
     fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.sm,
-    backgroundColor: Colors.cardBackground,
+    paddingHorizontal: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+  },
+  wideInputContainer: {
+    maxWidth: 768,
+    alignSelf: 'center',
+    width: '100%',
   },
   voiceNoteBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: Spacing.xs,
     marginRight: Spacing.xs,
   },
   chatInput: {
     flex: 1,
-    backgroundColor: Colors.cardWhite,
     borderRadius: BorderRadius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.xs + 4,
     fontSize: 14,
-    color: Colors.text,
+    borderWidth: 1,
+    maxHeight: 100,
+    outlineStyle: 'none' as any,
+    outlineWidth: 0 as any,
+    outlineColor: 'transparent' as any,
   },
   sendBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     marginLeft: Spacing.xs,
+    ...Shadows.sm,
   },
 });

@@ -18,6 +18,28 @@ export const Colors = {
   shadowColor: 'rgba(110, 60, 20, 0.08)',
 };
 
+export const DarkColors = {
+  background: '#0F0D0B',
+  cardBackground: '#1C1814',
+  cardWhite: '#241F1A',
+  primary: '#D4622A',      // slightly lighter for dark bg contrast
+  primaryDark: '#963E14',
+  accent: '#B84C1C',
+  accentLight: '#2E1E14',
+  text: '#F0EAE4',
+  textMuted: '#9E958E',
+  border: '#2E2620',
+  streakBadgeBg: '#2A1E14',
+  streakBadgeText: '#E8936A',
+  success: '#4ABA72',
+  warning: '#F59E0B',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  white: '#FFFFFF',
+  shadowColor: 'rgba(0, 0, 0, 0.3)',
+};
+
+export type ThemeColors = typeof Colors;
+
 export const Fonts = {
   regular: 'System',
   medium: 'System',
@@ -40,3 +62,34 @@ export const BorderRadius = {
   xl: 28,
   pill: 999,
 };
+
+export const Shadows = {
+  sm: {
+    shadowColor: 'rgba(110, 60, 20, 0.08)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: 'rgba(110, 60, 20, 0.10)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: 'rgba(110, 60, 20, 0.14)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+};
+
+/**
+ * Shared content container max-width used by every primary page
+ * (Home, Library, Marketplace, Profile, Dashboard, My Requests).
+ * Ensures consistent horizontal layout across the application.
+ */
+export const CONTENT_MAX_WIDTH = 860;

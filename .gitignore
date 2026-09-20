@@ -40,3 +40,11 @@ app-example
 # generated native folders
 /ios
 /android
+
+# AI files
+.agents/
+.claude/
+.vscode/
+AGENTS.md 
+CLAUDE.md
+scratch

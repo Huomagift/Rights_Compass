@@ -1,44 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/theme';
-import { getStoredProfile } from '../services/offlineStorage';
+import { LoadingState } from '../components/LoadingState';
+import { checkOnboardingStatus } from '../services/onboardingService';
+import { marketplaceService, rehydrateMockService } from '../services/marketplaceProvider';
 
 export default function Index() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkOnboarding();
-  }, []);
+    async function checkRoute() {
+      try {
+        await rehydrateMockService();
+        const [status, app] = await Promise.all([
+          checkOnboardingStatus(),
+          marketplaceService.getMyApplication().catch(() => null),
+        ]);
+        const hasLawyerApp = app != null && app.status !== 'draft';
 
-  const checkOnboarding = async () => {
-    try {
-      const profile = await getStoredProfile();
-      if (profile.onboarded) {
+        if (status.onboarded || hasLawyerApp) {
+          router.replace('/(tabs)' as any);
+        } else {
+          router.replace('/onboarding' as any);
+        }
+      } catch {
         router.replace('/(tabs)' as any);
-      } else {
-        router.replace('/onboarding' as any);
       }
-    } catch (e) {
-      router.replace('/onboarding' as any);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={Colors.primary} />
-    </View>
-  );
+    checkRoute();
+  }, [router]);
+
+  return <LoadingState mode="spinner" message="Loading Rights Compass…" />;
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+// For app.json web:
+//"backgroundImage": "./assets/images/rights_compass_logo.png",
+//"monochromeImage": "./assets/images/rights_compass_logo.png"
