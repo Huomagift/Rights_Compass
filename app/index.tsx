@@ -1,38 +1,37 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/theme';
-import { clearAllLocalStorage } from '../services/offlineStorage';
+import { LoadingState } from '../components/LoadingState';
+import { checkOnboardingStatus } from '../services/onboardingService';
+import { marketplaceService, rehydrateMockService } from '../services/marketplaceProvider';
 
 export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    async function resetAndStartFresh() {
+    async function checkRoute() {
       try {
-        // Clear local storage for fresh onboarding testing
-        await clearAllLocalStorage();
-        router.replace('/onboarding' as any);
+        await rehydrateMockService();
+        const [status, app] = await Promise.all([
+          checkOnboardingStatus(),
+          marketplaceService.getMyApplication().catch(() => null),
+        ]);
+        const hasLawyerApp = app != null && app.status !== 'draft';
+
+        if (status.onboarded || hasLawyerApp) {
+          router.replace('/(tabs)' as any);
+        } else {
+          router.replace('/onboarding' as any);
+        }
       } catch {
-        router.replace('/onboarding' as any);
+        router.replace('/(tabs)' as any);
       }
     }
 
-    resetAndStartFresh();
+    checkRoute();
   }, [router]);
 
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={Colors.primary} />
-    </View>
-  );
+  return <LoadingState mode="spinner" message="Loading Rights Compass…" />;
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+// For app.json web:
+//"backgroundImage": "./assets/images/rights_compass_logo.png",
+//"monochromeImage": "./assets/images/rights_compass_logo.png"

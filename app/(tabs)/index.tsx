@@ -1,42 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-  useWindowDimensions,
-} from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
-  User,
   ArrowRight,
-  ChevronRight,
-  FileText,
-  Search,
-  FileSearch,
-  Scale,
-  Sparkles,
-  Flame,
-  Home,
-  Briefcase,
-  ShoppingBag,
-  Shield,
   Bell,
-  Moon,
-  Sun,
+  Briefcase,
+  ChevronRight,
+  FileSearch,
+  FileText,
+  Flame,
+  Gavel,
+  Home,
   Menu,
+  Moon,
+  Scale,
+  Search,
+  Shield,
+  ShoppingBag,
+  Sparkles,
+  Sun,
+  User,
 } from 'lucide-react-native';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
-import { useTheme } from '../../context/ThemeContext';
-import { updateDailyStreak, UserProfile } from '../../services/offlineStorage';
-import { FEATURED_GUIDE as DEFAULT_FEATURED_GUIDE, RECENT_GUIDES as DEFAULT_RECENT_GUIDES, GuideItem } from '../../data/constitutionStore';
-import { NotificationModal } from '../../components/NotificationModal';
-import { HeaderMenuModal } from '../../components/HeaderMenuModal';
-import { FloatingAIBot } from '../../components/FloatingAIBot';
+import React, { useEffect, useState } from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { ErrorState } from '../../components/ErrorState';
+import { FloatingAIBot } from '../../components/FloatingAIBot';
+import { HeaderMenuModal } from '../../components/HeaderMenuModal';
+import { NotificationModal } from '../../components/NotificationModal';
+import { BorderRadius, Colors, CONTENT_MAX_WIDTH, Shadows, Spacing } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
+import { FEATURED_GUIDE as DEFAULT_FEATURED_GUIDE, RECENT_GUIDES as DEFAULT_RECENT_GUIDES, GuideItem } from '../../data/constitutionStore';
+import { getTodayLesson } from '../../data/lessonStore';
+import { updateDailyStreak, UserProfile } from '../../services/offlineStorage';
 
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
   return (
@@ -150,6 +153,7 @@ const getTimeOfDayGreeting = (): string => {
 export default function HomeScreen() {
   const router = useRouter();
   const { colors, isDark, toggleTheme } = useTheme();
+  const { isVerifiedLawyer, hasAppliedAsLawyer } = useMarketplace();
   const { width } = useWindowDimensions();
   const [profile, setProfile] = useState<UserProfile>({
     name: 'Alex',
@@ -170,6 +174,11 @@ export default function HomeScreen() {
     const p = await updateDailyStreak();
     setProfile(p);
   };
+
+  // Dynamically compute Today's Card-Based Lesson
+  const todayLesson = React.useMemo(() => {
+    return getTodayLesson(profile);
+  }, [profile]);
 
   // Dynamically select Featured Guide & Recent Guides based on user onboarding interests
   const { featuredGuide, recentGuides } = React.useMemo(() => {
@@ -319,16 +328,30 @@ export default function HomeScreen() {
                   <View style={[styles.notificationDot, { backgroundColor: colors.primary }]} />
                 </TouchableOpacity>
 
-                {/* PROFILE AVATAR */}
-                <TouchableOpacity
-                  style={[
-                    styles.profileAvatar,
-                    { backgroundColor: colors.primaryDark },
-                  ]}
-                  onPress={() => router.push('/(tabs)/profile' as any)}
-                >
-                  <User size={18} color="#FFFFFF" />
-                </TouchableOpacity>
+                {/* PROFILE AVATAR / LAWYER DASHBOARD */}
+                {hasAppliedAsLawyer ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.profileAvatar,
+                      { backgroundColor: colors.primary },
+                    ]}
+                    onPress={() => router.push('/marketplace/dashboard' as any)}
+                    accessibilityLabel="Open lawyer dashboard"
+                  >
+                    <Gavel size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.profileAvatar,
+                      { backgroundColor: colors.primaryDark },
+                    ]}
+                    onPress={() => router.push('/(tabs)/profile' as any)}
+                    accessibilityLabel="Open user profile"
+                  >
+                    <User size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -351,7 +374,7 @@ export default function HomeScreen() {
                 isMobile && { fontSize: isSmall ? 20 : 23, marginBottom: 2 },
               ]}
             >
-              Ready to explore?
+              Ready for today&apos;s lesson?
             </Text>
             <Text
               style={[
@@ -360,11 +383,11 @@ export default function HomeScreen() {
                 isMobile && { fontSize: 13, lineHeight: 18 },
               ]}
             >
-              Your compass is set. Let&apos;s find the legal clarity you need today.
+              Build your legal preparedness in {profile.dailyCommitmentMinutes || 5} minutes a day.
             </Text>
           </View>
 
-          {/* HERO FEATURED SECTION (RESPONSIVE: STREAMLINED MOBILE & EXPANDED DESKTOP) */}
+          {/* DYNAMIC TODAY'S LEGAL LESSON HERO CARD */}
           <View style={[styles.heroDarkCard, isMobile && styles.heroDarkCardMobile]}>
             {isMobile ? (
               <>
@@ -372,100 +395,150 @@ export default function HomeScreen() {
                 <View style={styles.heroStatusRow}>
                   <View style={styles.liveStatusPill}>
                     <View style={styles.statusDotGreen} />
-                    <Text style={styles.liveStatusText}>ACTIVE LEGAL GUIDE</Text>
+                    <Text style={styles.liveStatusText}>TODAY&apos;S LEGAL LESSON</Text>
                   </View>
                   <View style={styles.categoryTagPill}>
                     <Text style={styles.categoryTagText} numberOfLines={1}>
-                      {featuredGuide.category.toUpperCase()}
+                      {todayLesson.category.toUpperCase()}
                     </Text>
                   </View>
                 </View>
 
-                {/* STREAMLINED, UNCLUTTERED & PERFECTLY ALIGNED MOBILE VIEW */}
+                {/* STREAMLINED MOBILE VIEW FOR DAILY LESSON */}
                 <View style={styles.heroMobileBody}>
-                  {/* Middle Content Row: Left Title & Info, Right Glassmorphic Icon Badge */}
                   <View style={styles.heroMobileContentRow}>
                     <View style={styles.heroMobileTextCol}>
                       <Text style={styles.heroMobileTitle} numberOfLines={2}>
-                        {featuredGuide.title}
+                        {todayLesson.heroQuestionTitle}
                       </Text>
                       <Text style={styles.heroMobileSubtitle} numberOfLines={2}>
-                        {featuredGuide.subtitle}
+                        {todayLesson.estimatedMinutes} min lesson • {todayLesson.topicTitle}
                       </Text>
 
-                      {/* Clean Citation Pill */}
                       <View style={styles.heroMobileCitationPill}>
-                        <Scale size={11} color={colors.primary} style={{ marginRight: 5 }} />
+                        <Sparkles size={11} color="#D97706" style={{ marginRight: 5 }} />
                         <Text style={styles.heroMobileCitationText} numberOfLines={1}>
-                          {featuredGuide.citation || 'Constitution 1999'}
+                          {todayLesson.levelTitle}
                         </Text>
                       </View>
                     </View>
 
-                    {/* Right Icon Badge, aligned vertically with the card */}
-                    <View style={styles.heroMobileIconBadge}>
-                      {renderGuideIcon(featuredGuide.iconName, 24, colors.primary)}
-                    </View>
+                    <Image
+                      source={require('../../assets/images/mascot.png')}
+                      style={{ width: 62, height: 62, borderRadius: 31 }}
+                      contentFit="contain"
+                    />
                   </View>
 
-                  {/* Bottom Full-Width CTA Button - Perfectly aligned with the card margins */}
                   <TouchableOpacity
-                    style={[styles.heroMobileFullBtn, { backgroundColor: colors.primary }]}
+                    style={[
+                      styles.heroMobileFullBtn,
+                      {
+                        backgroundColor: colors.primary,
+                        borderBottomWidth: 4,
+                        borderBottomColor: colors.primaryDark,
+                      },
+                    ]}
                     activeOpacity={0.88}
-                    onPress={() => router.push(`/guide/${featuredGuide.id}` as any)}
+                    onPress={() => router.push('/lesson/today' as any)}
                   >
-                    <Text style={styles.heroMobileFullBtnText}>Start Reading Guide</Text>
+                    <Text style={styles.heroMobileFullBtnText}>START TODAY&apos;S LESSON</Text>
                     <ArrowRight size={15} color="#FFFFFF" style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{
+                      marginTop: 12,
+                      alignSelf: 'center',
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.12)',
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => router.push('/lesson/path' as any)}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#E2E8F0' }}>
+                      🗺️ View Winding Learning Path →
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </>
             ) : (
-              /* EXPANDED DESKTOP / WEB VIEW */
+              /* EXPANDED DESKTOP VIEW FOR DAILY LESSON */
               <View style={styles.heroContentGrid}>
                 <View style={styles.heroInfoCol}>
-                  {/* Top Status Pill on the left above the title */}
                   <View style={styles.heroDesktopStatusRow}>
                     <View style={styles.liveStatusPill}>
                       <View style={styles.statusDotGreen} />
-                      <Text style={styles.liveStatusText}>ACTIVE LEGAL GUIDE</Text>
+                      <Text style={styles.liveStatusText}>TODAY&apos;S LEGAL LESSON</Text>
                     </View>
                   </View>
 
-                  <Text style={styles.heroTitleText}>{featuredGuide.title}</Text>
-                  <Text style={styles.heroSubtitleText}>{featuredGuide.subtitle}</Text>
+                  <Text style={styles.heroTitleText}>{todayLesson.heroQuestionTitle}</Text>
+                  <Text style={styles.heroSubtitleText}>
+                    {todayLesson.estimatedMinutes} min daily workout • {todayLesson.topicTitle}
+                  </Text>
 
-                  {/* Refined Metadata Tags */}
                   <View style={styles.heroTagsContainer}>
                     <View style={styles.metaPill}>
                       <Scale size={12} color={colors.primary} style={{ marginRight: 4 }} />
-                      <Text style={styles.metaPillText}>{featuredGuide.citation || 'Constitution 1999'}</Text>
+                      <Text style={styles.metaPillText}>{todayLesson.levelTitle}</Text>
                     </View>
                     <View style={styles.metaPill}>
                       <Sparkles size={12} color="#D97706" style={{ marginRight: 4 }} />
-                      <Text style={styles.metaPillText}>Interactive Quiz Included</Text>
+                      <Text style={styles.metaPillText}>Interactive Decision Cards</Text>
                     </View>
                   </View>
                 </View>
 
-                {/* Right Action Column: "POLICE AND CIVIL RIGHTS", Shield, and "Start reading" all sharing the exact same axis */}
                 <View style={styles.heroActionCol}>
                   <View style={styles.categoryTagPill}>
                     <Text style={styles.categoryTagText} numberOfLines={1}>
-                      {featuredGuide.category.toUpperCase()}
+                      {todayLesson.category.toUpperCase()}
                     </Text>
                   </View>
 
-                  <View style={styles.heroIconBadge}>
-                    {renderGuideIcon(featuredGuide.iconName, 32, colors.primary)}
-                  </View>
+                  <Image
+                    source={require('../../assets/images/mascot.png')}
+                    style={{ width: 68, height: 68, borderRadius: 34, marginVertical: 6 }}
+                    contentFit="contain"
+                  />
 
                   <TouchableOpacity
-                    style={[styles.heroPrimaryBtn, { backgroundColor: colors.primary }]}
+                    style={[
+                      styles.heroPrimaryBtn,
+                      {
+                        backgroundColor: colors.primary,
+                        borderBottomWidth: 4,
+                        borderBottomColor: colors.primaryDark,
+                      },
+                    ]}
                     activeOpacity={0.85}
-                    onPress={() => router.push(`/guide/${featuredGuide.id}` as any)}
+                    onPress={() => router.push('/lesson/today' as any)}
                   >
-                    <Text style={styles.heroPrimaryBtnText}>Start Reading</Text>
+                    <Text style={styles.heroPrimaryBtnText}>START TODAY&apos;S LESSON</Text>
                     <ArrowRight size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{
+                      marginTop: 8,
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.12)',
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => router.push('/lesson/path' as any)}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#E2E8F0', textAlign: 'center' }}>
+                      🗺️ View Winding Learning Path →
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -568,7 +641,7 @@ export default function HomeScreen() {
                 <Scale size={20} color={colors.primary} />
               </View>
               <Text style={[styles.quickTitle, { color: colors.text }]}>Find Legal Aid</Text>
-              <Text style={[styles.quickSub, { color: colors.textMuted }]}>Pro bono search</Text>
+              <Text style={[styles.quickSub, { color: colors.textMuted }]}>Find a lawyer</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -585,7 +658,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* DRAGGABLE FLOATING AI BOT */}
+      {/* FLOATING AI TUTOR BOT */}
       <FloatingAIBot />
 
       {/* INTERACTIVE NOTIFICATION MODAL */}
@@ -600,6 +673,7 @@ export default function HomeScreen() {
         onClose={() => setShowMenuModal(false)}
         profile={profile}
         onOpenNotifications={() => setShowNotifications(true)}
+        isVerifiedLawyer={isVerifiedLawyer}
       />
     </SafeAreaView>
   );
@@ -617,7 +691,7 @@ const styles = StyleSheet.create({
   },
   webContainer: {
     width: '100%',
-    maxWidth: 1100,
+    maxWidth: CONTENT_MAX_WIDTH,
     alignSelf: 'center',
   },
   headerTopBar: {

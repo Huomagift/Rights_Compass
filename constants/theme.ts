@@ -86,3 +86,10 @@ export const Shadows = {
     elevation: 8,
   },
 };
+
+/**
+ * Shared content container max-width used by every primary page
+ * (Home, Library, Marketplace, Profile, Dashboard, My Requests).
+ * Ensures consistent horizontal layout across the application.
+ */
+export const CONTENT_MAX_WIDTH = 860;

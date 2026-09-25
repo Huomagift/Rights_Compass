@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Bell, X, Check, Flame, Shield, Sparkles } from 'lucide-react-native';
 import { BorderRadius, Spacing, Shadows } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -19,6 +20,7 @@ export interface NotificationItem {
   time: string;
   read: boolean;
   type: 'streak' | 'guide' | 'ai';
+  route?: string;
 }
 
 interface NotificationModalProps {
@@ -28,20 +30,31 @@ interface NotificationModalProps {
 
 const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
+    id: 'n0',
+    title: '📘 Today’s Legal Lesson Ready',
+    message: 'Can someone search your phone without permission? Learn this in 3 minutes.',
+    time: 'Just now',
+    read: false,
+    type: 'guide',
+    route: '/lesson/today',
+  },
+  {
     id: 'n1',
     title: '🔥 12-Day Streak Achieved!',
     message: 'Awesome work staying consistent! You earned the Constitutional Scholar badge.',
     time: '2h ago',
     read: false,
     type: 'streak',
+    route: '/lesson/path',
   },
   {
     id: 'n2',
-    title: '🛡️ New Guide: Police Checkpoints',
+    title: '🛡️ New Lesson: Police Checkpoints',
     message: 'Updated legal rights under ACJA s.9 and Constitution 1999 s.37.',
     time: '1d ago',
     read: false,
     type: 'guide',
+    route: '/lesson/today',
   },
   {
     id: 'n3',
@@ -50,6 +63,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     time: '2d ago',
     read: true,
     type: 'ai',
+    route: '/tutor-chat',
   },
 ];
 
@@ -57,6 +71,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
   visible,
   onClose,
 }) => {
+  const router = useRouter();
   const { colors } = useTheme();
   const [notifications, setNotifications] = useState<NotificationItem[]>(
     INITIAL_NOTIFICATIONS
@@ -68,6 +83,16 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
 
   const clearAll = () => {
     setNotifications([]);
+  };
+
+  const handleNotificationPress = (item: NotificationItem) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+    );
+    onClose();
+    if (item.route) {
+      router.push(item.route as any);
+    }
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -152,7 +177,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               />
             ) : (
               notifications.map((item) => (
-                <View
+                <TouchableOpacity
                   key={item.id}
                   style={[
                     styles.notificationCard,
@@ -161,6 +186,8 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                       borderColor: item.read ? colors.border : colors.primary,
                     },
                   ]}
+                  activeOpacity={0.8}
+                  onPress={() => handleNotificationPress(item)}
                 >
                   <View style={[styles.iconCircle, { backgroundColor: colors.cardWhite }]}>
                     {renderIcon(item.type)}
@@ -178,7 +205,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                       {item.message}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </ScrollView>
@@ -200,16 +227,15 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     maxWidth: 480,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
     borderWidth: 1,
-    ...Shadows.lg,
-    maxHeight: '80%',
+    ...Shadows.md,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
   },
@@ -218,13 +244,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
   },
   unreadBadge: {
-    borderRadius: BorderRadius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    borderRadius: BorderRadius.pill,
     marginLeft: 8,
   },
   unreadBadgeText: {

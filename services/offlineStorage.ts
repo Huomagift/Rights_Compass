@@ -6,6 +6,7 @@ export interface UserProfile {
   name: string;
   preferredTime: string; // e.g. "08:00 AM"
   phoneNumber?: string;
+  state?: string;
   onboarded: boolean;
   streakCount: number;
   lastOpenedDate: string; // YYYY-MM-DD
@@ -13,6 +14,11 @@ export interface UserProfile {
   consentStatus?: boolean;
   consentTimestamp?: string;
   syncedToSupabase?: boolean;
+  learningReminderEnabled?: boolean;
+  learningReminderTime?: string;
+  dailyCommitmentMinutes?: number; // 2, 5, or 10 min
+  completedLessonIds?: string[];
+  currentLevelId?: number;
 }
 
 const USER_PROFILE_KEY = '@rights_compass_user_profile';
@@ -28,6 +34,11 @@ const DEFAULT_PROFILE: UserProfile = {
   consentStatus: false,
   consentTimestamp: undefined,
   syncedToSupabase: false,
+  learningReminderEnabled: true,
+  learningReminderTime: '07:00 PM',
+  dailyCommitmentMinutes: 5,
+  completedLessonIds: [],
+  currentLevelId: 1,
 };
 
 /**
@@ -285,5 +296,17 @@ export const resetStreakToDayOne = async (): Promise<UserProfile> => {
   });
 };
 
-
-
+/**
+ * Record a completed lesson ID and update streak
+ */
+export const recordCompletedLesson = async (lessonId: string): Promise<UserProfile> => {
+  const profile = await updateDailyStreak();
+  const currentCompleted = profile.completedLessonIds || [];
+  if (!currentCompleted.includes(lessonId)) {
+    const updated = await saveStoredProfile({
+      completedLessonIds: [...currentCompleted, lessonId],
+    });
+    return updated;
+  }
+  return profile;
+};

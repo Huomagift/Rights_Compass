@@ -577,6 +577,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
     maxHeight: 100,
+    outlineStyle: 'none' as any,
+    outlineWidth: 0 as any,
+    outlineColor: 'transparent' as any,
   },
   sendBtn: {
     width: 40,

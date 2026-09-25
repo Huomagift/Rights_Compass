@@ -1,4 +1,10 @@
-import React, { useState } from 'react';
+/**
+ * Marketplace Tab – entry point
+ *
+ * MARKETPLACE_ENABLED = false  →  existing waitlist screen (zero change)
+ * MARKETPLACE_ENABLED = true   →  routes into app/marketplace/ stack
+ */
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,11 +14,16 @@ import {
   SafeAreaView,
   useWindowDimensions,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Lock, ShieldCheck, CheckCircle2, Bell, Scale, Sparkles, Sun, Moon, Gavel, UserCheck } from 'lucide-react-native';
-import { Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Spacing, BorderRadius, Shadows, CONTENT_MAX_WIDTH } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
+import { useFeatureFlag } from '../../config/featureFlags';
+import { MarketplaceDirectory } from '../../components/MarketplaceDirectory';
 
-export default function MarketplaceScreen() {
+// ─── Flag-Off: existing waitlist screen (unchanged JSX) ──────────────────────
+
+function WaitlistScreen() {
   const { width } = useWindowDimensions();
   const { colors, isDark, toggleTheme } = useTheme();
   const [notified, setNotified] = useState(false);
@@ -27,22 +38,11 @@ export default function MarketplaceScreen() {
           { backgroundColor: colors.background, borderBottomColor: colors.border },
         ]}
       >
-        <View style={styles.headerTopRow}>
+        <View style={[styles.headerInner, isWide && styles.headerInnerWide]}>
           <View style={{ flex: 1, marginRight: Spacing.sm }}>
-            <View
-              style={[
-                styles.m3TagBadge,
-                { backgroundColor: isDark ? 'rgba(212, 98, 42, 0.2)' : colors.accentLight },
-              ]}
-            >
-              <Sparkles size={12} color={colors.primary} />
-              <Text style={[styles.m3TagText, { color: colors.primary }]}>
-                M3 Pro Bono Directory
-              </Text>
-            </View>
             <Text style={[styles.pageTitle, { color: colors.text }]}>Find Legal Aid</Text>
             <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>
-              Connect with NBA-verified pro bono lawyers and accredited legal representation.
+              Connect with NBA-verified lawyers and accredited legal professionals.
             </Text>
           </View>
 
@@ -97,7 +97,7 @@ export default function MarketplaceScreen() {
             ]}
           >
             <Text style={[styles.phaseBadgeText, { color: colors.primary }]}>
-              PHASE 2 • NBA PRO BONO NETWORK
+              PHASE 2 • NBA VERIFIED NETWORK
             </Text>
           </View>
 
@@ -105,7 +105,7 @@ export default function MarketplaceScreen() {
             Accredited Legal Aid Network
           </Text>
           <Text style={[styles.cardDescription, { color: colors.textMuted }]}>
-            We are currently verifying and onboarding accredited Nigerian Bar Association (NBA) legal practitioners, Legal Aid Council of Nigeria (LACON) representatives, and pro bono organizations. Direct lawyer matching and intake requests will launch in our next release.
+            We are currently verifying and onboarding Nigerian Bar Association (NBA) accredited legal practitioners. Find the right lawyer for your matter, get transparent pricing, and connect directly — launching in our next release.
           </Text>
 
           {/* TEASER FEATURE LIST CONTAINER */}
@@ -138,10 +138,10 @@ export default function MarketplaceScreen() {
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.sm }}>
                 <Text style={[styles.teaserTextTitle, { color: colors.text }]}>
-                  100% Free Pro Bono Defense
+                  Transparent Flat-Rate Services
                 </Text>
                 <Text style={[styles.teaserTextSub, { color: colors.textMuted }]}>
-                  Guaranteed zero cost representation for fundamental rights violations
+                  Know exactly what you pay upfront. No hidden fees, no surprise bills.
                 </Text>
               </View>
             </View>
@@ -170,7 +170,7 @@ export default function MarketplaceScreen() {
             ]}
             activeOpacity={0.85}
             onPress={() => setNotified(!notified)}
-            accessibilityLabel="Join Pro Bono Waitlist"
+            accessibilityLabel="Join waitlist"
           >
             {notified ? (
               <View style={styles.btnRow}>
@@ -190,15 +190,33 @@ export default function MarketplaceScreen() {
   );
 }
 
+// ─── Exported component ───────────────────────────────────────────────────────
+
+export default function MarketplaceScreen() {
+  const marketplaceEnabled = useFeatureFlag('MARKETPLACE_ENABLED');
+  if (marketplaceEnabled) {
+    return <MarketplaceDirectory />;
+  }
+  return <WaitlistScreen />;
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
+  },
+  headerInner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  headerInnerWide: {
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    width: '100%',
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -215,11 +233,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     gap: 6,
   },
-  m3TagText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
+  m3TagText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   themeToggleBtn: {
     width: 40,
     height: 40,
@@ -228,27 +242,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  pageSubtitle: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 2,
-  },
+  pageTitle: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  pageSubtitle: { fontSize: 13, lineHeight: 19, marginTop: 2 },
   scrollContent: {
     padding: Spacing.lg,
     flexGrow: 1,
     justifyContent: 'center',
     paddingBottom: 100,
   },
-  wideScrollContent: {
-    maxWidth: 720,
-    alignSelf: 'center',
-    width: '100%',
-  },
+  wideScrollContent: { maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%' },
   comingSoonCard: {
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
@@ -272,11 +274,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginBottom: Spacing.sm,
   },
-  phaseBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
+  phaseBadgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
   cardTitle: {
     fontSize: 24,
     fontWeight: '800',
@@ -297,10 +295,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
   },
-  teaserRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  teaserRow: { flexDirection: 'row', alignItems: 'center' },
   checkCircleBox: {
     width: 32,
     height: 32,
@@ -308,14 +303,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  teaserTextTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  teaserTextSub: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
+  teaserTextTitle: { fontSize: 14, fontWeight: '700' },
+  teaserTextSub: { fontSize: 12, lineHeight: 16 },
   notifyBtn: {
     width: '100%',
     borderRadius: BorderRadius.pill,
@@ -329,9 +318,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  notifyBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
+  notifyBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 });

@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ErrorState, ErrorBoundaryWrapper } from '../components/ErrorState';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import { MarketplaceProvider } from '../context/MarketplaceContext';
 
 if (typeof window !== 'undefined') {
   const isExtensionError = (value: any): boolean => {
@@ -76,6 +77,53 @@ if (typeof window !== 'undefined') {
     }
     _origConsoleError(...args);
   };
+
+  // Inject web global style to eliminate browser focus rings, white borders,
+  // and the unwanted text I-beam cursor on static React Native Web text elements.
+  if (typeof document !== 'undefined') {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'rights-compass-web-focus-reset';
+    styleEl.textContent = `
+      /* Focus outline reset */
+      *, *::before, *::after, input, textarea, select, button, [contenteditable="true"] {
+        outline: none !important;
+        outline-style: none !important;
+        outline-width: 0 !important;
+        outline-color: transparent !important;
+        -webkit-tap-highlight-color: transparent !important;
+        box-shadow: none !important;
+      }
+      input:focus, input:focus-visible, input:focus-within,
+      textarea:focus, textarea:focus-visible, textarea:focus-within,
+      select:focus, select:focus-visible, select:focus-within,
+      button:focus, button:focus-visible,
+      [contenteditable="true"]:focus, [contenteditable="true"]:focus-visible,
+      *:focus, *:focus-visible {
+        outline: none !important;
+        outline-style: none !important;
+        outline-width: 0 !important;
+        outline-color: transparent !important;
+        box-shadow: none !important;
+      }
+      /* Caret fix: RN Web renders Text as div; browsers default cursor:text on div */
+      html, body, div, span, p, h1, h2, h3, h4, h5, h6, li, ul, ol {
+        cursor: default !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+      }
+      /* Restore cursor and selection for actual inputs */
+      input, textarea, [contenteditable="true"] {
+        cursor: text !important;
+        user-select: text !important;
+        -webkit-user-select: text !important;
+      }
+      /* Pointer for interactive elements */
+      button, a, [role="button"] {
+        cursor: pointer !important;
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
 }
 
 
@@ -127,6 +175,14 @@ function AppStack() {
         <Stack.Screen name="ui-states" />
         <Stack.Screen name="error" />
         <Stack.Screen name="not-found" />
+        <Stack.Screen
+          name="marketplace"
+          options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="lawyer-application"
+          options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
       </Stack>
     </>
   );
@@ -136,7 +192,9 @@ export default function RootLayout() {
   return (
     <ErrorBoundaryWrapper>
       <ThemeProvider>
-        <AppStack />
+        <MarketplaceProvider>
+          <AppStack />
+        </MarketplaceProvider>
       </ThemeProvider>
     </ErrorBoundaryWrapper>
   );

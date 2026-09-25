@@ -32,19 +32,32 @@ import {
   Phone,
   Sparkles,
   Zap,
-  Book,
   WifiOff,
-  Flame,
   Bot,
+  HelpCircle,
+  Bell,
+  BellOff,
+  Book,
 } from 'lucide-react-native';
 import { Spacing, BorderRadius, Shadows } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useFeatureFlag } from '../config/featureFlags';
 import {
   checkOnboardingStatus,
   saveDraftProgress,
   completeOnboarding,
   clearDraftProgress,
+  DraftOnboardingData,
 } from '../services/onboardingService';
+import { marketplaceService } from '../services/marketplaceProvider';
+import { saveStoredProfile } from '../services/offlineStorage';
+
+export interface ExtendedDraftData extends DraftOnboardingData {
+  dailyCommitmentMinutes?: number;
+  learningReminderEnabled?: boolean;
+  learningReminderTime?: string;
+  syncedToSupabase?: boolean;
+}
 
 interface DomainOption {
   id: string;
@@ -87,9 +100,9 @@ const DOMAIN_OPTIONS: DomainOption[] = [
   {
     id: 'other',
     label: 'General Knowledge',
-    description: '',
+    description: 'Essential everyday rights and general constitutional protections.',
     Icon: Book,
-  }
+  },
 ];
 
 interface TimeOption {
@@ -123,7 +136,19 @@ const TIME_OPTIONS: TimeOption[] = [
   },
 ];
 
-const TOTAL_STEPS = 5;
+interface ReminderTimeOption {
+  time: string;
+  label: string;
+}
+
+const REMINDER_TIME_OPTIONS: ReminderTimeOption[] = [
+  { time: '07:00 AM', label: 'Morning commute' },
+  { time: '12:30 PM', label: 'Lunch break' },
+  { time: '07:00 PM', label: 'Evening review (Popular)' },
+  { time: '09:00 PM', label: 'Night wind-down' },
+];
+
+const TOTAL_STEPS = 6; // 0: Welcome/Mascot/Pillars, 1: Name&Phone, 2: Topics, 3: Routine Time, 4: Learning Reminder, 5: Disclaimer&Consent
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -132,41 +157,44 @@ export default function OnboardingScreen() {
   const params = useLocalSearchParams<{ reOnboard?: string }>();
   const isReOnboarding = params.reOnboard === 'true';
 
+  const marketplaceEnabled = useFeatureFlag('MARKETPLACE_ENABLED');
+  const [isLawyerPath, setIsLawyerPath] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Step state:
-  // 0: Welcome & Aegis Introduction
-  // 1: Personal Info (Name & WhatsApp Phone)
-  // 2: Priority Legal Interests (Areas of interest)
-  // 3: Daily Habit Routine (Notification Time)
-  // 4: Legal Disclaimer & Consent
+  // Step state: 0..5
   const [step, setStep] = useState(0);
 
   // Form State
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [preferredTime, setPreferredTime] = useState('08:00 AM');
+  const [dailyCommitmentMinutes, setDailyCommitmentMinutes] = useState<number>(5);
   const [selectedDomains, setSelectedDomains] = useState<string[]>(['police', 'tenancy']);
+  const [learningReminderEnabled, setLearningReminderEnabled] = useState(true);
+  const [learningReminderTime, setLearningReminderTime] = useState('07:00 PM');
   const [consentChecked, setConsentChecked] = useState(false);
 
   // Animated progress bar
-  const progressAnim = useRef(new Animated.Value(0.2)).current;
+  const progressAnim = useRef(new Animated.Value(0.16)).current;
   // Step content fade
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const isDesktop = width >= 640;
 
   // Step Validations
+  const isStep0Valid = true;
   const isStep1Valid = name.trim().length > 0 && phone.trim().length >= 10;
   const isStep2Valid = selectedDomains.length > 0;
   const isStep3Valid = preferredTime.length > 0;
-  const isStep4Valid = consentChecked;
+  const isStep4Valid = true; // Optional choice
+  const isStep5Valid = consentChecked;
 
   const isCurrentStepValid = (): boolean => {
     switch (step) {
       case 0:
-        return true;
+        return isStep0Valid;
       case 1:
         return isStep1Valid;
       case 2:
@@ -175,6 +203,8 @@ export default function OnboardingScreen() {
         return isStep3Valid;
       case 4:
         return isStep4Valid;
+      case 5:
+        return isStep5Valid;
       default:
         return true;
     }
@@ -185,25 +215,25 @@ export default function OnboardingScreen() {
     Animated.parallel([
       Animated.timing(progressAnim, {
         toValue: (step + 1) / TOTAL_STEPS,
-        duration: 300,
+        duration: 250,
         useNativeDriver: false,
       }),
       Animated.sequence([
         Animated.timing(fadeAnim, {
-          toValue: 0.2,
-          duration: 80,
+          toValue: 0.25,
+          duration: 70,
           useNativeDriver: true,
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 180,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
   }, [step, progressAnim, fadeAnim]);
 
-  // Resume mid-onboarding progress or handle explicit re-onboarding
+  // Resume mid-onboarding progress or handle re-onboarding
   useEffect(() => {
     async function initOnboarding() {
       try {
@@ -214,20 +244,29 @@ export default function OnboardingScreen() {
           return;
         }
 
-        const status = await checkOnboardingStatus();
-        if (status.onboarded) {
+        const [status, lawyerApp] = await Promise.all([
+          checkOnboardingStatus(),
+          marketplaceService.getMyApplication().catch(() => null),
+        ]);
+        if (status.onboarded || (lawyerApp != null && lawyerApp.status !== 'draft')) {
           router.replace('/(tabs)' as any);
           return;
         }
 
         if (status.draft && status.draft.step > 0) {
-          setStep(status.draft.step);
-          if (status.draft.name) setName(status.draft.name);
-          if (status.draft.phone !== undefined) setPhone(status.draft.phone);
-          if (status.draft.preferredTime) setPreferredTime(status.draft.preferredTime);
-          if (status.draft.selectedDomains) setSelectedDomains(status.draft.selectedDomains);
-          if (status.draft.consentChecked !== undefined)
-            setConsentChecked(status.draft.consentChecked);
+          const draft = status.draft as ExtendedDraftData;
+          setStep(draft.step);
+          if (draft.name) setName(draft.name);
+          if (draft.phone !== undefined) setPhone(draft.phone);
+          if (draft.preferredTime) setPreferredTime(draft.preferredTime);
+          if (draft.dailyCommitmentMinutes) setDailyCommitmentMinutes(draft.dailyCommitmentMinutes);
+          if (draft.selectedDomains) setSelectedDomains(draft.selectedDomains);
+          if (draft.learningReminderEnabled !== undefined)
+            setLearningReminderEnabled(draft.learningReminderEnabled);
+          if (draft.learningReminderTime)
+            setLearningReminderTime(draft.learningReminderTime);
+          if (draft.consentChecked !== undefined)
+            setConsentChecked(draft.consentChecked);
         }
       } catch (err) {
         console.error('Error checking onboarding status:', err);
@@ -239,16 +278,25 @@ export default function OnboardingScreen() {
     initOnboarding();
   }, [router, isReOnboarding]);
 
-  const goToStep = (nextStep: number) => {
-    setStep(nextStep);
-    saveDraftProgress({
-      step: nextStep,
+  const updateDraft = (newStep: number, overrides?: Partial<ExtendedDraftData>) => {
+    const currentData: ExtendedDraftData = {
+      step: newStep,
       name,
       phone,
       preferredTime,
+      dailyCommitmentMinutes,
       selectedDomains,
+      learningReminderEnabled,
+      learningReminderTime,
       consentChecked,
-    });
+      ...overrides,
+    };
+    saveDraftProgress(currentData as any);
+  };
+
+  const goToStep = (nextStep: number) => {
+    setStep(nextStep);
+    updateDraft(nextStep);
   };
 
   const handleNext = () => {
@@ -274,14 +322,7 @@ export default function OnboardingScreen() {
       updated = [...selectedDomains, id];
     }
     setSelectedDomains(updated);
-    saveDraftProgress({
-      step,
-      name,
-      phone,
-      preferredTime,
-      selectedDomains: updated,
-      consentChecked,
-    });
+    updateDraft(step, { selectedDomains: updated });
   };
 
   const handleFinish = async () => {
@@ -290,16 +331,37 @@ export default function OnboardingScreen() {
     setIsSubmitting(true);
 
     await completeOnboarding({
-      step: 4,
+      step: 5,
       name: name.trim() || 'Alex',
       phone: phone.trim(),
       preferredTime,
+      dailyCommitmentMinutes,
       selectedDomains,
+      learningReminderEnabled,
+      learningReminderTime,
       consentChecked: true,
+      syncedToSupabase: true,
+    } as any);
+
+    await saveStoredProfile({
+      name: name.trim() || 'Alex',
+      phoneNumber: phone.trim(),
+      preferredTime,
+      interests: selectedDomains,
+      onboarded: true,
+      consentStatus: true,
+      consentTimestamp: new Date().toISOString(),
+      syncedToSupabase: true,
     });
 
     setIsSubmitting(false);
-    router.replace('/(tabs)' as any);
+
+    // If the user selected the lawyer practitioner path, route to application flow
+    if (marketplaceEnabled && isLawyerPath) {
+      router.replace('/lawyer-application' as any);
+    } else {
+      router.replace('/(tabs)' as any);
+    }
   };
 
   if (isLoading) {
@@ -316,10 +378,9 @@ export default function OnboardingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        {/* DUOLINGO-STYLE PROGRESSIVE TOP BAR */}
+        {/* TOP BAR WITH PROGRESS TRACK & THEME SWITCH */}
         <View style={[styles.topBar, { borderBottomColor: colors.border }]}>
           <View style={styles.topBarContent}>
-            {/* Back button (hidden on first step) */}
             <TouchableOpacity
               style={[
                 styles.navBtn,
@@ -337,7 +398,6 @@ export default function OnboardingScreen() {
               <ArrowLeft size={18} color={colors.text} />
             </TouchableOpacity>
 
-            {/* Material 3 Progress Bar Track */}
             <View style={styles.progressTrackWrapper}>
               <View
                 style={[
@@ -360,7 +420,6 @@ export default function OnboardingScreen() {
               </View>
             </View>
 
-            {/* Right Group: Theme Switch & Step Badge */}
             <View style={styles.topRightGroup}>
               <TouchableOpacity
                 style={[
@@ -372,7 +431,7 @@ export default function OnboardingScreen() {
                 ]}
                 activeOpacity={0.8}
                 onPress={toggleTheme}
-                accessibilityLabel="Toggle Dark Mode"
+                accessibilityLabel="Toggle Theme"
               >
                 {isDark ? (
                   <Sun size={17} color={colors.text} />
@@ -384,7 +443,7 @@ export default function OnboardingScreen() {
           </View>
         </View>
 
-        {/* STEP CONTENT SCROLLER */}
+        {/* STEP CONTENT CONTAINER */}
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
@@ -401,11 +460,10 @@ export default function OnboardingScreen() {
             ]}
           >
             {/* =================================================== */}
-            {/* STEP 0: WELCOME & AEGIS MASCOT INTRODUCTION       */}
+            {/* STEP 0: WELCOME & AEGIS MASCOT INTRO + 4 PILLARS   */}
             {/* =================================================== */}
             {step === 0 && (
               <View style={styles.stepBox}>
-                {/* Brand Logo & Compass Pill */}
                 <View style={styles.welcomeBadgeRow}>
                   <Image
                     source={require('../assets/images/rights_compass_logo.png')}
@@ -432,7 +490,7 @@ export default function OnboardingScreen() {
                   Everyday legal rights for everyday Nigerians. Practical, straightforward, and 100% offline.
                 </Text>
 
-                {/* DUOLINGO-STYLE AEGIS MASCOT INTRO SPEECH CARD */}
+                {/* AEGIS MASCOT INTRO CARD */}
                 <View
                   style={[
                     styles.aegisSpeechCard,
@@ -474,12 +532,12 @@ export default function OnboardingScreen() {
                       </Text>
                     </View>
                     <Text style={[styles.aegisSpeechQuote, { color: colors.text }]}>
-                      &quot;Hi! I&apos;m <Text style={{ color: colors.primary, fontWeight: '800' }}>Aegis</Text> 👋 I&apos;ll be right beside you to make complex Nigerian laws and rights clear, practical, and ready whenever you need them!&quot;
+                      &quot;Hi! I&apos;m <Text style={{ color: colors.primary, fontWeight: '800' }}>Aegis</Text> 👋 I&apos;ll be right beside you to make complex Nigerian laws clear, practical, and ready whenever you need them!&quot;
                     </Text>
                   </View>
                 </View>
 
-                {/* 3 CORE VALUE PILLARS */}
+                {/* 4 CORE VALUE PILLARS */}
                 <View style={styles.valuePillarsGrid}>
                   <View
                     style={[
@@ -533,7 +591,27 @@ export default function OnboardingScreen() {
                         24/7 AI Legal Tutor
                       </Text>
                       <Text style={[styles.pillarDesc, { color: colors.textMuted }]}>
-                        Instant, non-judgmental guidance on police, tenancy, and civil rules.
+                        Instant guidance on police, tenancy, and civil rules in plain language.
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 4TH PILLAR: INTERACTIVE QUIZZES */}
+                  <View
+                    style={[
+                      styles.pillarCard,
+                      { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                    ]}
+                  >
+                    <View style={[styles.pillarIconCircle, { backgroundColor: colors.accentLight }]}>
+                      <HelpCircle size={18} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.pillarTitle, { color: colors.text }]}>
+                        Interactive Quizzes
+                      </Text>
+                      <Text style={[styles.pillarDesc, { color: colors.textMuted }]}>
+                        Test your understanding with short scenarios. Learn it. Test it. Remember it.
                       </Text>
                     </View>
                   </View>
@@ -542,11 +620,10 @@ export default function OnboardingScreen() {
             )}
 
             {/* =================================================== */}
-            {/* STEP 1: PERSONAL INFORMATION (NAME & PHONE)       */}
+            {/* STEP 1: PERSONAL INFORMATION (NAME & PHONE COMBINED)*/}
             {/* =================================================== */}
             {step === 1 && (
               <View style={styles.stepBox}>
-                {/* Aegis Mini Encouragement */}
                 <View
                   style={[
                     styles.aegisMiniBanner,
@@ -580,7 +657,7 @@ export default function OnboardingScreen() {
                       styles.inputWrapper,
                       {
                         backgroundColor: colors.cardWhite,
-                        borderColor: name.trim().length > 0 ? colors.primary : colors.border,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
@@ -592,14 +669,7 @@ export default function OnboardingScreen() {
                       value={name}
                       onChangeText={(val) => {
                         setName(val);
-                        saveDraftProgress({
-                          step: 1,
-                          name: val,
-                          phone,
-                          preferredTime,
-                          selectedDomains,
-                          consentChecked,
-                        });
+                        updateDraft(1, { name: val });
                       }}
                       autoCapitalize="words"
                       autoFocus
@@ -614,14 +684,14 @@ export default function OnboardingScreen() {
                     WhatsApp Phone Number <Text style={{ color: colors.primary }}>*</Text>
                   </Text>
                   <Text style={[styles.fieldHelperText, { color: colors.textMuted }]}>
-                    Used for your daily legal reminder notifications and account verification.
+                    We’ll use WhatsApp to send your daily legal insight and important reminders.
                   </Text>
                   <View
                     style={[
                       styles.inputWrapper,
                       {
                         backgroundColor: colors.cardWhite,
-                        borderColor: phone.trim().length >= 10 ? colors.primary : colors.border,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
@@ -633,14 +703,7 @@ export default function OnboardingScreen() {
                       value={phone}
                       onChangeText={(val) => {
                         setPhone(val);
-                        saveDraftProgress({
-                          step: 1,
-                          name,
-                          phone: val,
-                          preferredTime,
-                          selectedDomains,
-                          consentChecked,
-                        });
+                        updateDraft(1, { phone: val });
                       }}
                       keyboardType="phone-pad"
                     />
@@ -657,18 +720,63 @@ export default function OnboardingScreen() {
                 >
                   <Shield size={16} color={colors.success} style={{ marginRight: 8 }} />
                   <Text style={[styles.privacyPromiseText, { color: colors.textMuted }]}>
-                    Your contact information is strictly private and stored on your device. Never shared.
+                    We respect your privacy. Your contact information is strictly private and stored on your device. Never shared.
                   </Text>
                 </View>
+
+                {/* LAWYER PATH OPTION – only when marketplace flag is on */}
+                {marketplaceEnabled && (
+                  <TouchableOpacity
+                    style={[
+                      styles.lawyerPathCard,
+                      {
+                        backgroundColor: isLawyerPath ? colors.accentLight : colors.cardWhite,
+                        borderColor: isLawyerPath ? colors.primary : colors.border,
+                        borderWidth: isLawyerPath ? 2 : 1,
+                      },
+                    ]}
+                    onPress={() => setIsLawyerPath(!isLawyerPath)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isLawyerPath }}
+                    accessibilityLabel="I am a Lawyer / Legal Practitioner"
+                  >
+                    <View
+                      style={[
+                        styles.lawyerPathIconCircle,
+                        { backgroundColor: isLawyerPath ? colors.primary : colors.cardBackground },
+                      ]}
+                    >
+                      <Briefcase size={20} color={isLawyerPath ? '#FFFFFF' : colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={[styles.lawyerPathTitle, { color: isLawyerPath ? colors.primary : colors.text }]}>
+                        I am a Lawyer / Legal Practitioner
+                      </Text>
+                      <Text style={[styles.lawyerPathSub, { color: colors.textMuted }]}>
+                        Apply to join our NBA-verified lawyer directory after onboarding.
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.lawyerPathCheck,
+                        {
+                          backgroundColor: isLawyerPath ? colors.primary : 'transparent',
+                          borderColor: isLawyerPath ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      {isLawyerPath && <Check size={14} color="#FFFFFF" />}
+                    </View>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
 
             {/* =================================================== */}
-            {/* STEP 2: PRIORITY LEGAL INTERESTS (LARGE CARDS)    */}
+            {/* STEP 2: PRIORITY LEGAL INTERESTS (TOPICS SELECTION) */}
             {/* =================================================== */}
             {step === 2 && (
               <View style={styles.stepBox}>
-                {/* Aegis Mini Prompt */}
                 <View
                   style={[
                     styles.aegisMiniBanner,
@@ -706,7 +814,6 @@ export default function OnboardingScreen() {
                   </View>
                 </View>
 
-                {/* LARGE MATERIAL 3 SELECTION CARDS */}
                 <View style={styles.selectionCardsList}>
                   {DOMAIN_OPTIONS.map((domain) => {
                     const isSelected = selectedDomains.includes(domain.id);
@@ -728,7 +835,6 @@ export default function OnboardingScreen() {
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: isSelected }}
                       >
-                        {/* Domain Icon Pill */}
                         <View
                           style={[
                             styles.domainIconSquare,
@@ -737,13 +843,9 @@ export default function OnboardingScreen() {
                             },
                           ]}
                         >
-                          <IconComp
-                            size={22}
-                            color={isSelected ? '#FFFFFF' : colors.primary}
-                          />
+                          <IconComp size={22} color={isSelected ? '#FFFFFF' : colors.primary} />
                         </View>
 
-                        {/* Title & Description */}
                         <View style={styles.domainTextCol}>
                           <Text
                             style={[
@@ -756,12 +858,13 @@ export default function OnboardingScreen() {
                           >
                             {domain.label}
                           </Text>
-                          <Text style={[styles.domainDescText, { color: colors.textMuted }]}>
-                            {domain.description}
-                          </Text>
+                          {domain.description ? (
+                            <Text style={[styles.domainDescText, { color: colors.textMuted }]}>
+                              {domain.description}
+                            </Text>
+                          ) : null}
                         </View>
 
-                        {/* Selection Checkmark Indicator */}
                         <View
                           style={[
                             styles.checkIndicatorCircle,
@@ -781,11 +884,10 @@ export default function OnboardingScreen() {
             )}
 
             {/* =================================================== */}
-            {/* STEP 3: DAILY HABIT SCHEDULE (TIME SELECTION)     */}
+            {/* STEP 3: DAILY ROUTINE (TIME SELECTION)             */}
             {/* =================================================== */}
             {step === 3 && (
               <View style={styles.stepBox}>
-                {/* Aegis Mini Prompt */}
                 <View
                   style={[
                     styles.aegisMiniBanner,
@@ -809,7 +911,6 @@ export default function OnboardingScreen() {
                   Choose the best time for your 1-minute daily legal card. Works 100% offline.
                 </Text>
 
-                {/* LARGE TIME OPTION CARDS */}
                 <View style={styles.selectionCardsList}>
                   {TIME_OPTIONS.map((timeOption) => {
                     const isSelected = preferredTime === timeOption.time;
@@ -828,14 +929,7 @@ export default function OnboardingScreen() {
                         activeOpacity={0.85}
                         onPress={() => {
                           setPreferredTime(timeOption.time);
-                          saveDraftProgress({
-                            step: 3,
-                            name,
-                            phone,
-                            preferredTime: timeOption.time,
-                            selectedDomains,
-                            consentChecked,
-                          });
+                          updateDraft(3, { preferredTime: timeOption.time });
                         }}
                         accessibilityRole="radio"
                         accessibilityState={{ selected: isSelected }}
@@ -877,7 +971,7 @@ export default function OnboardingScreen() {
                                     { color: colors.streakBadgeText },
                                   ]}
                                 >
-                                  POPULAR
+                                  RECOMMENDED
                                 </Text>
                               </View>
                             )}
@@ -887,7 +981,6 @@ export default function OnboardingScreen() {
                           </Text>
                         </View>
 
-                        {/* Radio Checkmark Indicator */}
                         <View
                           style={[
                             styles.checkIndicatorCircle,
@@ -907,11 +1000,128 @@ export default function OnboardingScreen() {
             )}
 
             {/* =================================================== */}
-            {/* STEP 4: REVIEW & LEGAL DISCLAIMER CONSENT         */}
+            {/* STEP 4: DAILY LEARNING REMINDER (NEW OPTIONAL STEP) */}
+            {/* STEP 4: DAILY LEARNING REMINDER (NEW OPTIONAL STEP) */}
             {/* =================================================== */}
             {step === 4 && (
               <View style={styles.stepBox}>
-                {/* Aegis Mini Prompt */}
+                <Text style={[styles.headlineTitle, { color: colors.text }]}>
+                  Want a reminder to learn?
+                </Text>
+                <Text style={[styles.headlineSubtitle, { color: colors.textMuted }]}>
+                  We can remind you to complete your daily lesson.
+                </Text>
+
+                <View style={styles.reminderChoiceRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.reminderChoiceCard,
+                      {
+                        backgroundColor: learningReminderEnabled ? colors.accentLight : colors.cardWhite,
+                        borderColor: learningReminderEnabled ? colors.primary : colors.border,
+                        borderWidth: learningReminderEnabled ? 2 : 1,
+                      },
+                    ]}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      setLearningReminderEnabled(true);
+                      updateDraft(4, { learningReminderEnabled: true });
+                    }}
+                  >
+                    <View style={[styles.choiceIconCircle, { backgroundColor: colors.cardBackground }]}>
+                      <Bell size={20} color={colors.primary} />
+                    </View>
+                    <Text style={[styles.choiceTitle, { color: colors.text }]}>Set a reminder</Text>
+                    <Text style={[styles.choiceSub, { color: colors.textMuted }]}>
+                      Build your daily streak
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.reminderChoiceCard,
+                      {
+                        backgroundColor: !learningReminderEnabled ? colors.cardBackground : colors.cardWhite,
+                        borderColor: !learningReminderEnabled ? colors.textMuted : colors.border,
+                        borderWidth: !learningReminderEnabled ? 2 : 1,
+                      },
+                    ]}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      setLearningReminderEnabled(false);
+                      updateDraft(4, { learningReminderEnabled: false });
+                    }}
+                  >
+                    <View style={[styles.choiceIconCircle, { backgroundColor: colors.cardBackground }]}>
+                      <BellOff size={20} color={colors.textMuted} />
+                    </View>
+                    <Text style={[styles.choiceTitle, { color: colors.text }]}>Not now</Text>
+                    <Text style={[styles.choiceSub, { color: colors.textMuted }]}>
+                      Learn at your own pace
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {learningReminderEnabled && (
+                  <View style={styles.timeSelectionSubSection}>
+                    <Text style={[styles.timeSelectionTitle, { color: colors.text }]}>
+                      What time works best?
+                    </Text>
+
+                    <View style={styles.selectionCardsList}>
+                      {REMINDER_TIME_OPTIONS.map((item) => {
+                        const isSelected = learningReminderTime === item.time;
+                        return (
+                          <TouchableOpacity
+                            key={item.time}
+                            style={[
+                              styles.timeOptionCard,
+                              {
+                                backgroundColor: isSelected ? colors.accentLight : colors.cardWhite,
+                                borderColor: isSelected ? colors.primary : colors.border,
+                                borderWidth: isSelected ? 2 : 1,
+                              },
+                            ]}
+                            activeOpacity={0.85}
+                            onPress={() => {
+                              setLearningReminderTime(item.time);
+                              updateDraft(4, { learningReminderTime: item.time });
+                            }}
+                          >
+                            <Clock size={18} color={isSelected ? colors.primary : colors.textMuted} style={{ marginRight: 12 }} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.timeValueText, { color: isSelected ? colors.primary : colors.text }]}>
+                                {item.time}
+                              </Text>
+                              <Text style={[styles.timeLabelText, { color: colors.textMuted }]}>
+                                {item.label}
+                              </Text>
+                            </View>
+                            <View
+                              style={[
+                                styles.checkIndicatorCircle,
+                                {
+                                  backgroundColor: isSelected ? colors.primary : 'transparent',
+                                  borderColor: isSelected ? colors.primary : colors.border,
+                                },
+                              ]}
+                            >
+                              {isSelected && <Check size={14} color="#FFFFFF" />}
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* =================================================== */}
+            {/* STEP 5: REVIEW & LEGAL DISCLAIMER CONSENT         */}
+            {/* =================================================== */}
+            {step === 5 && (
+              <View style={styles.stepBox}>
                 <View
                   style={[
                     styles.aegisMiniBanner,
@@ -924,11 +1134,11 @@ export default function OnboardingScreen() {
                     contentFit="cover"
                   />
                   <Text style={[styles.aegisMiniText, { color: colors.streakBadgeText }]}>
-                    &quot;Almost there! Review your plan and accept the educational notice to unlock your compass.&quot;
+                    &quot;Almost there! Review your profile and accept the educational notice to enter.&quot;
                   </Text>
                 </View>
 
-                {/* User Summary Review Pills */}
+                {/* USER SUMMARY CARDS */}
                 <View
                   style={[
                     styles.summaryReviewCard,
@@ -959,7 +1169,7 @@ export default function OnboardingScreen() {
                     >
                       <Clock size={12} color={colors.primary} style={{ marginRight: 4 }} />
                       <Text style={[styles.reviewChipText, { color: colors.text }]}>
-                        {preferredTime}
+                        Daily Card: {preferredTime}
                       </Text>
                     </View>
 
@@ -971,9 +1181,50 @@ export default function OnboardingScreen() {
                     >
                       <Shield size={12} color={colors.primary} style={{ marginRight: 4 }} />
                       <Text style={[styles.reviewChipText, { color: colors.text }]}>
-                        {selectedDomains.length} Priority Areas
+                        {selectedDomains.length} Priority Topics
+                        {selectedDomains.length} Priority Topics
                       </Text>
                     </View>
+
+                    <View
+                      style={[
+                        styles.reviewChip,
+                        { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                      ]}
+                    >
+                      <Zap size={12} color={colors.primary} style={{ marginRight: 4 }} />
+                      <Text style={[styles.reviewChipText, { color: colors.text }]}>
+                        {dailyCommitmentMinutes} min / day Goal
+                      </Text>
+                    </View>
+
+                    {learningReminderEnabled && (
+                      <View
+                        style={[
+                          styles.reviewChip,
+                          { backgroundColor: colors.cardWhite, borderColor: colors.border },
+                        ]}
+                      >
+                        <Bell size={12} color={colors.primary} style={{ marginRight: 4 }} />
+                        <Text style={[styles.reviewChipText, { color: colors.text }]}>
+                          Reminder: {learningReminderTime}
+                        </Text>
+                      </View>
+                    )}
+
+                    {marketplaceEnabled && isLawyerPath && (
+                      <View
+                        style={[
+                          styles.reviewChip,
+                          { backgroundColor: colors.accentLight, borderColor: colors.primary },
+                        ]}
+                      >
+                        <Briefcase size={12} color={colors.primary} style={{ marginRight: 4 }} />
+                        <Text style={[styles.reviewChipText, { color: colors.primary, fontWeight: '700' }]}>
+                          Lawyer Track Active
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
 
@@ -984,7 +1235,7 @@ export default function OnboardingScreen() {
                   Please review our educational guidance terms before entering Rights Compass.
                 </Text>
 
-                {/* EXACT LEGAL DISCLAIMER BOX */}
+                {/* LEGAL DISCLAIMER BOX */}
                 <View
                   style={[
                     styles.disclaimerBox,
@@ -1025,14 +1276,7 @@ export default function OnboardingScreen() {
                   onPress={() => {
                     const newChecked = !consentChecked;
                     setConsentChecked(newChecked);
-                    saveDraftProgress({
-                      step: 4,
-                      name,
-                      phone,
-                      preferredTime,
-                      selectedDomains,
-                      consentChecked: newChecked,
-                    });
+                    updateDraft(5, { consentChecked: newChecked });
                   }}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: consentChecked }}
@@ -1053,19 +1297,12 @@ export default function OnboardingScreen() {
                     I have read and understood the disclaimer and agree to continue.
                   </Text>
                 </TouchableOpacity>
-
-                {/* PRIVACY FOOTNOTE */}
-                <Text style={[styles.privacyFootnoteText, { color: colors.textMuted }]}>
-                  Continuing also confirms your consent to processing your provided information to deliver your personalized compass.
-                </Text>
               </View>
             )}
           </Animated.View>
         </ScrollView>
 
-        {/* =================================================== */}
-        {/* STICKY PRIMARY CTA FOOTER                         */}
-        {/* =================================================== */}
+        {/* STICKY PRIMARY CTA FOOTER */}
         <View style={[styles.bottomFooter, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
           <View style={[styles.bottomFooterInner, isDesktop && styles.desktopFooterInner]}>
             <TouchableOpacity
@@ -1094,8 +1331,9 @@ export default function OnboardingScreen() {
                     {step === 0 && 'Get Started with Aegis'}
                     {step === 1 && 'Continue'}
                     {step === 2 && `Continue (${selectedDomains.length} Selected)`}
-                    {step === 3 && 'Continue to Disclaimer'}
-                    {step === 4 && 'Complete Setup & Enter'}
+                    {step === 3 && 'Continue'}
+                    {step === 4 && 'Continue to Disclaimer'}
+                    {step === 5 && 'Complete Setup & Enter'}
                   </Text>
                   <ArrowRight
                     size={18}
@@ -1113,6 +1351,56 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
+  commitmentSubSection: {
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  commitmentSubText: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: Spacing.sm,
+  },
+  commitmentRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  commitmentCard: {
+    flex: 1,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    ...Shadows.sm,
+  },
+  commitmentMinutes: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  commitmentLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  commitmentDesc: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  commitmentBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: BorderRadius.pill,
+  },
+  commitmentBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
   container: {
     flex: 1,
   },
@@ -1164,7 +1452,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
-    paddingBottom: 120, // space for sticky footer
+    paddingBottom: 120,
   },
   desktopScrollContent: {
     paddingTop: Spacing.xl,
@@ -1351,6 +1639,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     height: '100%',
     padding: 0,
+    outlineStyle: 'none' as any,
+    outlineWidth: 0 as any,
+    outlineColor: 'transparent' as any,
   },
   privacyPromiseCard: {
     flexDirection: 'row',
@@ -1434,6 +1725,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  reminderChoiceRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm + 2,
+    marginBottom: Spacing.lg,
+  },
+  reminderChoiceCard: {
+    flex: 1,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 110,
+    ...Shadows.sm,
+  },
+  choiceIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  choiceTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  choiceSub: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  timeSelectionSubSection: {
+    marginTop: Spacing.xs,
+  },
+  timeSelectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: Spacing.sm,
+  },
+  timeOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+  },
+  timeValueText: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  timeLabelText: {
+    fontSize: 12,
+  },
   summaryReviewCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
@@ -1496,12 +1841,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
-  privacyFootnoteText: {
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: 'center',
-    paddingHorizontal: Spacing.sm,
-  },
   bottomFooter: {
     position: 'absolute',
     bottom: 0,
@@ -1539,5 +1878,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0.2,
+  },
+  // ─── Lawyer path card ───────────────────────────────────────────────────────
+  lawyerPathCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  lawyerPathIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lawyerPathTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  lawyerPathSub: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  lawyerPathCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
