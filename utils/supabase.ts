@@ -3,8 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import { Database } from '../types/database.types';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
+export const isSupabaseConfigured = Boolean(
+  process.env.EXPO_PUBLIC_SUPABASE_URL &&
+    (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_KEY)
+);
+
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_KEY ||
+  'placeholder-anon-key';
 
 // SSR & Web Safe Storage Adapter to prevent "window is not defined" crashes during Expo Node rendering
 const SafeAsyncStorage = {

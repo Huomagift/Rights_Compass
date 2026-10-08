@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { LoadingState } from '../components/LoadingState';
+import { BrandedAppSplash } from '../components/BrandedAppSplash';
 import { checkOnboardingStatus } from '../services/onboardingService';
 import { marketplaceService, rehydrateMockService } from '../services/marketplaceProvider';
 
@@ -30,7 +30,7 @@ export default function Index() {
     checkRoute();
   }, [router]);
 
-  return <LoadingState mode="spinner" message="Loading Rights Compass…" />;
+  return <BrandedAppSplash />;
 }
 // For app.json web:
 //"backgroundImage": "./assets/images/rights_compass_logo.png",

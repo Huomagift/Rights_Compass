@@ -6,12 +6,18 @@ import {
 import { ensureAuthSession } from './authService';
 
 export interface DraftOnboardingData {
-  step: number; // 0: Welcome, 1: Name & Phone, 2: Time, 3: Interests, 4: Consent
+  step: number; // 0: Welcome, 1: Phone, 2: OTP, 3: Topics, 4: Routine, 5: Reminder, 6: Consent
   name: string;
   phone: string;
   preferredTime: string;
   selectedDomains: string[];
   consentChecked: boolean;
+  isOtpVerified?: boolean;
+  isLawyerPath?: boolean;
+  dailyCommitmentMinutes?: number;
+  learningReminderEnabled?: boolean;
+  learningReminderTime?: string;
+  syncedToSupabase?: boolean;
 }
 
 const DRAFT_STORAGE_KEY = '@rights_compass_onboarding_draft';
@@ -23,6 +29,11 @@ export const DEFAULT_DRAFT_ONBOARDING: DraftOnboardingData = {
   preferredTime: '08:00 AM',
   selectedDomains: ['police', 'tenancy'],
   consentChecked: false,
+  isOtpVerified: false,
+  isLawyerPath: false,
+  dailyCommitmentMinutes: 5,
+  learningReminderEnabled: true,
+  learningReminderTime: '07:00 PM',
 };
 
 /**

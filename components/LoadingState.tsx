@@ -298,8 +298,208 @@ export const HybridLoadingState: React.FC<{
  * Adheres to Material 3 UX standards by providing screen-matching skeletons for content
  * and progress loaders for asynchronous processing.
  */
+/**
+ * MARKETPLACE SKELETON: Matches lawyer directory shape
+ */
+export const MarketplaceScreenSkeleton: React.FC = () => {
+  const { colors } = useTheme();
+
+  return (
+    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.webContainer}>
+          {/* Search & Location Bar */}
+          <View style={[styles.searchAnchorSkeleton, { borderColor: colors.border }]}>
+            <SkeletonPulse style={{ width: 20, height: 20, borderRadius: 10, marginRight: 10 }} />
+            <SkeletonPulse style={{ flex: 1, height: 16, borderRadius: 4 }} />
+          </View>
+
+          {/* Filter Chips */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.md }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonPulse key={i} style={styles.filterChipSkeleton} />
+            ))}
+          </ScrollView>
+
+          {/* Lawyer Directory Cards */}
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.lawyerCardSkeleton,
+                { backgroundColor: colors.cardBackground, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.lawyerHeaderRow}>
+                <SkeletonPulse style={styles.lawyerAvatarSkeleton} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <SkeletonPulse style={{ width: '60%', height: 18, borderRadius: 4, marginBottom: 6 }} />
+                  <SkeletonPulse style={{ width: '40%', height: 12, borderRadius: 3, marginBottom: 6 }} />
+                  <SkeletonPulse style={{ width: '50%', height: 14, borderRadius: BorderRadius.pill }} />
+                </View>
+              </View>
+              <SkeletonPulse style={{ width: '100%', height: 12, borderRadius: 3, marginVertical: 8 }} />
+              <SkeletonPulse style={{ width: '80%', height: 12, borderRadius: 3, marginBottom: 12 }} />
+              <View style={styles.lawyerFooterRow}>
+                <SkeletonPulse style={{ width: 90, height: 26, borderRadius: BorderRadius.pill }} />
+                <SkeletonPulse style={{ width: 130, height: 38, borderRadius: BorderRadius.md }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+/**
+ * PROFILE SKELETON: Matches user profile shape
+ */
+export const ProfileScreenSkeleton: React.FC = () => {
+  const { colors } = useTheme();
+
+  return (
+    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.webContainer}>
+          {/* Header Card */}
+          <View
+            style={[
+              styles.profileHeaderCardSkeleton,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            ]}
+          >
+            <SkeletonPulse style={styles.profileAvatarSkeleton} />
+            <SkeletonPulse style={{ width: 140, height: 20, borderRadius: 4, marginVertical: 8 }} />
+            <SkeletonPulse style={{ width: 100, height: 12, borderRadius: 3, marginBottom: 12 }} />
+            <SkeletonPulse style={{ width: 120, height: 26, borderRadius: BorderRadius.pill }} />
+          </View>
+
+          {/* Stats Summary Card */}
+          <View
+            style={[
+              styles.profileStatsCardSkeleton,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            ]}
+          >
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <SkeletonPulse style={{ width: 40, height: 22, borderRadius: 4, marginBottom: 4 }} />
+              <SkeletonPulse style={{ width: 60, height: 12, borderRadius: 3 }} />
+            </View>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <SkeletonPulse style={{ width: 40, height: 22, borderRadius: 4, marginBottom: 4 }} />
+              <SkeletonPulse style={{ width: 60, height: 12, borderRadius: 3 }} />
+            </View>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <SkeletonPulse style={{ width: 40, height: 22, borderRadius: 4, marginBottom: 4 }} />
+              <SkeletonPulse style={{ width: 60, height: 12, borderRadius: 3 }} />
+            </View>
+          </View>
+
+          {/* Settings Options List */}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.profileOptionSkeleton,
+                { backgroundColor: colors.cardBackground, borderColor: colors.border },
+              ]}
+            >
+              <SkeletonPulse style={{ width: 32, height: 32, borderRadius: 16, marginRight: 12 }} />
+              <SkeletonPulse style={{ flex: 1, height: 16, borderRadius: 4 }} />
+              <SkeletonPulse style={{ width: 18, height: 18, borderRadius: 9 }} />
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+/**
+ * DETAIL SKELETON: Matches Provision / Guide detail shape
+ */
+export const DetailScreenSkeleton: React.FC = () => {
+  const { colors } = useTheme();
+
+  return (
+    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.webContainer}>
+          <SkeletonPulse style={{ width: 110, height: 24, borderRadius: BorderRadius.pill, marginBottom: 12 }} />
+          <SkeletonPulse style={{ width: '85%', height: 28, borderRadius: 6, marginBottom: 10 }} />
+          <SkeletonPulse style={{ width: 160, height: 16, borderRadius: 4, marginBottom: 20 }} />
+
+          {/* Summary Box */}
+          <View style={[styles.provisionCardSkeleton, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginBottom: 16 }]}>
+            <SkeletonPulse style={{ width: 90, height: 14, borderRadius: 3, marginBottom: 10 }} />
+            <SkeletonPulse style={{ width: '100%', height: 14, borderRadius: 3, marginBottom: 6 }} />
+            <SkeletonPulse style={{ width: '90%', height: 14, borderRadius: 3 }} />
+          </View>
+
+          {/* Verbatim text paragraphs */}
+          <SkeletonPulse style={{ width: '100%', height: 14, borderRadius: 3, marginBottom: 8 }} />
+          <SkeletonPulse style={{ width: '95%', height: 14, borderRadius: 3, marginBottom: 8 }} />
+          <SkeletonPulse style={{ width: '90%', height: 14, borderRadius: 3, marginBottom: 8 }} />
+          <SkeletonPulse style={{ width: '70%', height: 14, borderRadius: 3, marginBottom: 24 }} />
+
+          {/* Takeaway Box */}
+          <View style={[styles.provisionCardSkeleton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <SkeletonPulse style={{ width: '60%', height: 16, borderRadius: 4, marginBottom: 8 }} />
+            <SkeletonPulse style={{ width: '95%', height: 14, borderRadius: 3 }} />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+/**
+ * FORM SKELETON: Matches multi-step input form shape
+ */
+export const FormScreenSkeleton: React.FC = () => {
+  const { colors } = useTheme();
+
+  return (
+    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.webContainer}>
+          {/* Progress Indicator */}
+          <View style={{ flexDirection: 'row', gap: 6, marginBottom: 24 }}>
+            <SkeletonPulse style={{ flex: 1, height: 6, borderRadius: 3 }} />
+            <SkeletonPulse style={{ flex: 1, height: 6, borderRadius: 3 }} />
+            <SkeletonPulse style={{ flex: 1, height: 6, borderRadius: 3 }} />
+          </View>
+
+          <SkeletonPulse style={{ width: '70%', height: 26, borderRadius: 6, marginBottom: 8 }} />
+          <SkeletonPulse style={{ width: '90%', height: 14, borderRadius: 4, marginBottom: 24 }} />
+
+          {/* Field 1 */}
+          <SkeletonPulse style={{ width: 100, height: 14, borderRadius: 3, marginBottom: 8 }} />
+          <SkeletonPulse style={{ width: '100%', height: 48, borderRadius: BorderRadius.md, marginBottom: 16 }} />
+
+          {/* Field 2 */}
+          <SkeletonPulse style={{ width: 120, height: 14, borderRadius: 3, marginBottom: 8 }} />
+          <SkeletonPulse style={{ width: '100%', height: 48, borderRadius: BorderRadius.md, marginBottom: 16 }} />
+
+          {/* Field 3 */}
+          <SkeletonPulse style={{ width: 140, height: 14, borderRadius: 3, marginBottom: 8 }} />
+          <SkeletonPulse style={{ width: '100%', height: 96, borderRadius: BorderRadius.md, marginBottom: 24 }} />
+
+          {/* Submit CTA */}
+          <SkeletonPulse style={{ width: '100%', height: 50, borderRadius: BorderRadius.md }} />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+/**
+ * Main Flexible LoadingState component:
+ * Content-matching skeletons for each view mode.
+ */
 export const LoadingState: React.FC<{
-  mode?: 'home' | 'library' | 'spinner' | 'hybrid';
+  mode?: 'home' | 'library' | 'marketplace' | 'profile' | 'detail' | 'form' | 'card' | 'list' | 'spinner' | 'hybrid';
   message?: string;
   subMessage?: string;
 }> = ({ mode = 'home', message = 'Loading Legal Content...', subMessage }) => {
@@ -308,6 +508,18 @@ export const LoadingState: React.FC<{
       return <HomeScreenSkeleton />;
     case 'library':
       return <LibraryScreenSkeleton />;
+    case 'marketplace':
+      return <MarketplaceScreenSkeleton />;
+    case 'profile':
+      return <ProfileScreenSkeleton />;
+    case 'detail':
+      return <DetailScreenSkeleton />;
+    case 'form':
+      return <FormScreenSkeleton />;
+    case 'card':
+      return <SkeletonCard />;
+    case 'list':
+      return <SkeletonList count={3} />;
     case 'hybrid':
       return <HybridLoadingState type="home" message={message} showOverlaySpinner />;
     case 'spinner':
@@ -564,6 +776,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.sm,
+  },
+
+  // Marketplace Skeleton Styles
+  lawyerCardSkeleton: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+  },
+  lawyerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  lawyerAvatarSkeleton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  lawyerFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  // Profile Skeleton Styles
+  profileHeaderCardSkeleton: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+  },
+  profileAvatarSkeleton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  profileStatsCardSkeleton: {
+    flexDirection: 'row',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+  },
+  profileOptionSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
   },
 });
 
